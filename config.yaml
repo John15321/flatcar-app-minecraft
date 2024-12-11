@@ -2,6 +2,90 @@ variant: flatcar
 version: 1.0.0
 storage:
   files:
+    - path: /etc/mybackup/backup_minecraft.sh
+      filesystem: root
+      mode: 0755
+      contents:
+        inline: |
+          #!/bin/bash
+
+          # Define variables
+          BACKUP_DIR="/etc/mybackup"
+          MINECRAFT_DIR="/papermc"
+          TIMESTAMP=$(date +"%Y%m%d%H%M%S")
+          BACKUP_FILE="$BACKUP_DIR/minecraft_backup_$TIMESTAMP.tar.gz"
+
+          # Create a backup
+          tar -czvf $BACKUP_FILE $MINECRAFT_DIR
+
+          # Optional: Remove backups older than 7 days
+          find $BACKUP_DIR -type f -name "*.tar.gz" -mtime +7 -exec rm {} \;
+
+    - path: /etc/systemd/system/backup-minecraft.service
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+          [Unit]
+          Description=Backup Minecraft Server
+
+          [Service]
+          Type=oneshot
+          ExecStart=/etc/mybackup/backup_minecraft.sh
+
+    - path: /etc/systemd/system/backup-minecraft.timer
+      filesystem: root
+      mode: 0644
+
+      contents:
+        inline: |
+          [Unit]
+          Description=Daily Backup for Minecraft Server
+
+          [Timer]
+          OnCalendar=daily
+          Persistent=true
+
+
+          [Install]
+          WantedBy=timers.target
+
+    - path: /etc/systemd/system/create-sftp-user.service
+      filesystem: root
+
+      mode: 0644
+      contents:
+        inline: |
+          [Unit]
+          Description=Create SFTP User
+          After=network.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/sbin/useradd -m -d /papermc -s /bin/bash minecraftuser
+          ExecStartPost=/usr/bin/echo 'minecraftuser:password' | chpasswd
+          ExecStartPost=/usr/bin/mkdir -p /papermc
+          ExecStartPost=/usr/bin/chown root:root /papermc
+          ExecStartPost=/usr/bin/chmod 755 /papermc
+          ExecStartPost=/usr/bin/mkdir -p /papermc/home
+          ExecStartPost=/usr/bin/chown minecraftuser:minecraftuser /papermc/home
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - path: /etc/ssh/sshd_config
+      filesystem: root
+      mode: 0644
+      append: true
+
+      contents:
+        inline: |
+          Match User minecraftuser
+          ChrootDirectory /papermc
+          ForceCommand internal-sftp
+
+          AllowTcpForwarding no
+
     - path: /etc/systemd/system/minecraft.service
       filesystem: root
       mode: 0644
@@ -35,6 +119,10 @@ storage:
 systemd:
   units:
     - name: docker.service
+      enabled: true
+    - name: backup-minecraft.timer
+      enabled: true
+    - name: create-sftp-user.service
       enabled: true
     - name: minecraft.service
       enabled: true
