@@ -2,46 +2,106 @@ variant: flatcar
 version: 1.0.0
 storage:
   files:
+    - path: /etc/systemd/system/docker-network.service
+      filesystem: root
+      mode: 0644
+      contents:
+        inline: |
+
+          [Unit]
+          Description=Docker Network for Minecraft
+          After=docker.service
+          Requires=docker.service
+
+          [Service]
+          Type=oneshot
+
+          ExecStart=/usr/bin/docker network create minecraft-network
+          RemainAfterExit=true
+
+
+          [Install]
+          WantedBy=multi-user.target
+
+
     - path: /etc/systemd/system/minecraft.service
+
       filesystem: root
       mode: 0644
       contents:
         inline: |
           [Unit]
-          Description=Minecraft Server
-          After=docker.service
-          Requires=docker.service
+          Description=PaperMC Minecraft Server
+          After=docker.service docker-network.service
+          Requires=docker.service docker-network.service
 
           [Service]
           Restart=always
           RestartSec=20
           StandardOutput=journal
           StandardError=journal
-          Environment="EULA=TRUE"
+          Environment="EULA=true"
+          Environment="MC_VERSION=latest"
+          Environment="PAPER_BUILD=latest"
+          Environment="MC_RAM=4G"
+          Environment="JAVA_OPTS=-Xms4G -Xmx4G -XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M"
           Environment="ENABLE_RCON=true"
-          Environment="RCON_PASSWORD=testing"
-          Environment="RCON_PORT=28016"
-          Environment="REPLACE_ENV_VARIABLES=TRUE"
-          Environment="ENV_VARIABLE_PREFIX=CFG_"
-          Environment="CFG_OVERRIDE=true"
-          Environment="CFG_ONLINE_MODE=false"
-          ExecStart=/usr/bin/docker run --name mc -p 25565:25565 -e EULA=TRUE itzg/minecraft-server
-          ExecStop=/usr/bin/docker stop mc
-          ExecStopPost=/usr/bin/docker rm mc
+          Environment="RCON_PASSWORD=your_rcon_password"
+          Environment="RCON_PORT=25575"
+          ExecStartPre=/usr/bin/docker volume create --name papermc-data || true
+          ExecStart=/usr/bin/docker run --name papermc --network minecraft-network -p 25565:25565 -p 25575:25575 --memory="4g" --memory-swap="4g" -e EULA=true -e MC_VERSION=latest -e PAPER_BUILD=latest -e MC_RAM=4G -e JAVA_OPTS="-Xms4G -Xmx4G -XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M" -e ENABLE_RCON=true -e RCON_PASSWORD=your_rcon_password -e RCON_PORT=25575 -v papermc-data:/papermc phyremaster/papermc
+          ExecStop=/usr/bin/docker stop papermc
+          ExecStopPost=/usr/bin/docker rm papermc
 
           [Install]
           WantedBy=multi-user.target
+
+    - path: /etc/systemd/system/rcon-cli.service
+      filesystem: root
+
+      mode: 0644
+      contents:
+        inline: |
+          [Unit]
+          Description=RCON CLI for Minecraft Server
+          After=docker.service docker-network.service
+          Requires=docker.service docker-network.service minecraft.service
+
+          [Service]
+
+          Restart=always
+          RestartSec=20
+
+          StandardOutput=journal
+          StandardError=journal
+          ExecStart=/usr/bin/docker run --name rcon-cli --network minecraft-network --rm itzg/rcon-cli --host papermc --port 25575 --password your_rcon_password
+          ExecStop=/usr/bin/docker stop rcon-cli
+          ExecStopPost=/usr/bin/docker rm rcon-cli
+
+
+          [Install]
+          WantedBy=multi-user.target
+
+
 systemd:
   units:
     - name: docker.service
       enabled: true
+
+    - name: docker-network.service
+      enabled: true
     - name: minecraft.service
       enabled: true
+    - name: rcon-cli.service
+      enabled: true
+
 networkd:
   units:
+
     - name: 00-eth0.network
       contents: |
         [Match]
+
         Name=eth0
 
         [Network]
@@ -51,9 +111,11 @@ networkd:
         [DHCP]
         UseDNS=false
 
+
         [Route]
         Gateway=192.168.100.1
         Destination=0.0.0.0/0
+
 
         [Address]
         Address=192.168.100.9/24
@@ -65,4 +127,3 @@ networkd:
         [PortForward]
         Port=25565
         Protocol=udp
- 
