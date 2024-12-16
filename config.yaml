@@ -3,7 +3,6 @@ version: 1.0.0
 storage:
   files:
     - path: /etc/mybackup/backup_minecraft.sh
-      filesystem: root
       mode: 0755
       contents:
         inline: |
@@ -22,7 +21,6 @@ storage:
           find $BACKUP_DIR -type f -name "*.tar.gz" -mtime +7 -exec rm {} \;
 
     - path: /etc/systemd/system/backup-minecraft.service
-      filesystem: root
       mode: 0644
       contents:
         inline: |
@@ -34,9 +32,7 @@ storage:
           ExecStart=/etc/mybackup/backup_minecraft.sh
 
     - path: /etc/systemd/system/backup-minecraft.timer
-      filesystem: root
       mode: 0644
-
       contents:
         inline: |
           [Unit]
@@ -74,10 +70,8 @@ storage:
           WantedBy=multi-user.target
 
     - path: /etc/ssh/sshd_config
-      filesystem: root
       mode: 0644
       append: true
-
       contents:
         inline: |
           Match User minecraftuser
@@ -87,7 +81,6 @@ storage:
           AllowTcpForwarding no
 
     - path: /etc/systemd/system/minecraft.service
-      filesystem: root
       mode: 0644
       contents:
         inline: |
