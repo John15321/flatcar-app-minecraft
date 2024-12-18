@@ -1,84 +1,46 @@
 variant: flatcar
 version: 1.0.0
+passwd:
+  groups:
+  - name: minecraftuser
+    gid: 1001
+  users:
+    - name: minecraftuser
+      password_hash: "$6$KC03ivXtZjiIk1W6$8Ns0BHeraeNTG0l1JYlBkCefsQMUapCNmaXKLgz8QZrWVCXebpi02z69DYvGQBmRrHl1fX7wL525jn72fuNUM"
+      ssh_authorized_keys:
+        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQD0qN+MNQOviFJ5CSmqS0X3fHMaJR6twqg2g5HAC4322r bqBeU4SBuF+hVu0ZMA0Vij25WO/Zm7UL6wfaZWlc2z5R6PSm9tt7k63nNnCufubEkkmWVP4UGb7n2cWh8G wlcOb+qIg4jH7qbyFw7WgFrMVU62hNprTcsPKkDlXlWziDfGuFlIzcf5ONAehjkQOs2qnwk4TSLo/L88hA z9+XtK3heG274lU8CirL9PgXUB0glg5H3BO/91sUmor0HJMzCso9+nJ9gA5iT78plYjoh6J0AzlKoHORQ6 m+IEmxpZzr1T3no0D9Lm3SGtRbuTFeouApsb9mZ19io3n42TJBDmXmwHq4qOSTMHSBBTECEp/zJM58y61u MUvKJfxZuJbsHd//0i71CvfNZNm9kn96PDWlDm+P3icaC1F4vjUY4cCqpXSDGuGEs+z4Ycasv9Bpn4cByh BMeC8cbH6mkh/8HTB6DWByPE7fISwf2em/eL8jYWLwpgMeAkRHtGzR9LBavIa7XPmc6q+iAcEZF64pbqGK xUFo9WypQpDQpfW9ZZt427j0EWlTvbZSGAD2A+zrUyMJkg+v520bkygS9bNiiD1MTgca+c0vY9/rUY87uq 6RuMxBFksN4o1SG/m6aWbSgtabqlPwVfqxEA5kek8V0lGkZQ489qXgKCibq3jQ8PkQ== minecraftuser"
+      home_dir: /home/minecraftuser
+      shell: /bin/bash
+      groups:
+        - sudo
+        - docker
+      no_create_home: false
+      primary_group: minecraftuser
+
 storage:
   files:
-    - path: /etc/mybackup/backup_minecraft.sh
-      mode: 0755
-      contents:
-        inline: |
-          #!/bin/bash
 
-          # Define variables
-          BACKUP_DIR="/etc/mybackup"
-          MINECRAFT_DIR="/papermc"
-          TIMESTAMP=$(date +"%Y%m%d%H%M%S")
-          BACKUP_FILE="$BACKUP_DIR/minecraft_backup_$TIMESTAMP.tar.gz"
-
-          # Create a backup
-          tar -czvf $BACKUP_FILE $MINECRAFT_DIR
-
-          # Optional: Remove backups older than 7 days
-          find $BACKUP_DIR -type f -name "*.tar.gz" -mtime +7 -exec rm {} \;
-
-    - path: /etc/systemd/system/backup-minecraft.service
+    - path: /etc/systemd/system/sftp-mc.service
       mode: 0644
       contents:
         inline: |
           [Unit]
-          Description=Backup Minecraft Server
+          Description=SFTP Server for PaperMC Data
+          After=docker.service
+          Requires=docker.service
 
           [Service]
-          Type=oneshot
-          ExecStart=/etc/mybackup/backup_minecraft.sh
-
-    - path: /etc/systemd/system/backup-minecraft.timer
-      mode: 0644
-      contents:
-        inline: |
-          [Unit]
-          Description=Daily Backup for Minecraft Server
-
-          [Timer]
-          OnCalendar=daily
-          Persistent=true
-
-
-          [Install]
-          WantedBy=timers.target
-
-    - path: /etc/systemd/system/create-sftp-user.service
-      filesystem: root
-
-      mode: 0644
-      contents:
-        inline: |
-          [Unit]
-          Description=Create SFTP User
-          After=network.target
-
-          [Service]
-          Type=oneshot
-          ExecStart=/usr/sbin/useradd -m -d /papermc -s /bin/bash minecraftuser
-          ExecStartPost=/usr/bin/echo 'minecraftuser:password' | chpasswd
-          ExecStartPost=/usr/bin/mkdir -p /papermc
-          ExecStartPost=/usr/bin/chown root:root /papermc
-          ExecStartPost=/usr/bin/chmod 755 /papermc
-          ExecStartPost=/usr/bin/mkdir -p /papermc/home
-          ExecStartPost=/usr/bin/chown minecraftuser:minecraftuser /papermc/home
+          Restart=always
+          RestartSec=20
+          StandardOutput=journal
+          StandardError=journal
+          ExecStart=/usr/bin/docker run --name sftp -p 2223:22 -v papermc-data:/home/minecraftuser/papermc -d ghcr.io/atmoz/sftp/debian minecraftuser:password:::upload
+          ExecStop=/usr/bin/docker stop sftp
+          ExecStopPost=/usr/bin/docker rm sftp
 
           [Install]
           WantedBy=multi-user.target
 
-    - path: /etc/ssh/sshd_config
-      mode: 0644
-      append: true
-      contents:
-        inline: |
-          Match User minecraftuser
-          ChrootDirectory /papermc
-          ForceCommand internal-sftp
-
-          AllowTcpForwarding no
 
     - path: /etc/systemd/system/minecraft.service
       mode: 0644
@@ -102,7 +64,7 @@ storage:
           Environment="ENABLE_RCON=true"
           Environment="RCON_PASSWORD=your_rcon_password"
           Environment="RCON_PORT=25575"
-          ExecStart=/usr/bin/docker run --name papermc -p 25565:25565 -p 25575:25575 --memory="4g" --memory-swap="4g" --dns 8.8.8.8 --dns 8.8.4.4 -e EULA=true -e MC_VERSION=latest -e PAPER_BUILD=latest -e MC_RAM=4G -e JAVA_OPTS="-Xms4G -Xmx4G -XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M" -e ENABLE_RCON=true -e RCON_PASSWORD=your_rcon_password -e RCON_PORT=25575 -v papermc-data:/papermc phyremaster/papermc
+          ExecStart=/usr/bin/docker run --name papermc -p 25565:25565 -p 25575:25575 --memory="4g" --memory-swap="4g"  -e EULA=true -e MC_VERSION=latest -e PAPER_BUILD=latest -e MC_RAM=4G -e JAVA_OPTS="-Xms4G -Xmx4G -XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M" -e ENABLE_RCON=true -e RCON_PASSWORD=your_rcon_password -e RCON_PORT=25575 -v papermc-data:/papermc phyremaster/papermc
           ExecStop=/usr/bin/docker stop papermc
           ExecStopPost=/usr/bin/docker rm papermc
 
@@ -113,9 +75,7 @@ systemd:
   units:
     - name: docker.service
       enabled: true
-    - name: backup-minecraft.timer
-      enabled: true
-    - name: create-sftp-user.service
+    - name: sftp-mc.service
       enabled: true
     - name: minecraft.service
       enabled: true
@@ -148,3 +108,7 @@ networkd:
         [PortForward]
         Port=25565
         Protocol=udp
+
+        [PortForward]
+        Port=2223
+        Protocol=tcp
