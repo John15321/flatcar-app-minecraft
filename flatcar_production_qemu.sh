@@ -288,7 +288,7 @@ case "${VM_BOARD}" in
         qemu-system-x86_64 \
             -name "$VM_NAME" \
             -m ${VM_MEMORY} \
-            -netdev user,id=eth0,hostfwd=tcp::25565-:25565,hostfwd=tcp::"${SSH_PORT}"-:22,hostname="${VM_NAME}" \
+            -netdev user,id=eth0,hostfwd=tcp::25565-:25565,hostfwd=tcp::2223-:2223,hostfwd=tcp::25575-:25575,hostfwd=tcp::"${SSH_PORT}"-:22,hostname="${VM_NAME}" \
             -device virtio-net-pci,netdev=eth0 \
             -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0 \
             "$@"
