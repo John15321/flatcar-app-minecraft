@@ -42,6 +42,13 @@ VNET_NAME="mc-vnet"                      # Virtual Network Name
 SUBNET_NAME="default"                    # Subnet Name
 ```
 
+### Create Resource Group
+Create a resource group to contain all the resources for your Minecraft server:
+
+```bash
+az group create --name $RESOURCE_GROUP --location $LOCATION
+```
+
 ### Create Virtual Network
 Create a virtual network with a subnet for the Minecraft server:
 
