@@ -1,13 +1,13 @@
 #!/bin/sh
 
 SCRIPT_DIR="$(dirname "$0")"
-VM_BOARD='amd64-usr'
-VM_NAME='flatcar_production_qemu-4081-2-0'
+VM_BOARD=
+VM_NAME=
 VM_UUID=
-VM_IMAGE='flatcar_production_qemu_image.img'
+VM_IMAGE=
 VM_KERNEL=
 VM_INITRD=
-VM_MEMORY='2048'
+VM_MEMORY=
 VM_CDROM=
 VM_PFLASH_RO=
 VM_PFLASH_RW=
@@ -19,8 +19,7 @@ IGNITION_CONFIG_FILE=""
 CONFIG_IMAGE=""
 SWTPM_DIR=
 SAFE_ARGS=0
-PORT_FORWARDS=()
-USAGE="Usage: $0 [-a authorized_keys] [-f host_port:guest_port] [--] [qemu options...]
+USAGE="Usage: $0 [-a authorized_keys] [--] [qemu options...]
 Options:
     -i FILE     File containing an Ignition config
                 (needs \"-append 'flatcar.first_boot=1'\" for already-booted or PXE images)
@@ -28,7 +27,6 @@ Options:
     -c FILE     Config drive as an iso or fat filesystem image.
     -a FILE     SSH public keys for login access. [~/.ssh/id_{dsa,rsa}.pub]
     -p PORT     The port on localhost to map to the VM's sshd. [2222]
-    -f PORT     Forward host_port:guest_port.
     -I FILE     Set a custom image file.
     -M MB       Set VM memory in MBs.
     -T DIR      Add a software TPM2 device through swtpm which stores secrets
@@ -86,9 +84,6 @@ while [ $# -ge 1 ]; do
         -p|-ssh-port)
             SSH_PORT="$2"
             shift 2 ;;
-        -f|-forward-port)
-            PORT_FORWARDS+=("$2")
-            shift 2 ;;
         -s|-safe)
             SAFE_ARGS=1
             shift ;;
@@ -125,6 +120,7 @@ while [ $# -ge 1 ]; do
         *)
             break ;;
     esac
+
 done
 
 
@@ -141,6 +137,7 @@ find_ssh_keys() {
 }
 
 write_ssh_keys() {
+
     echo "#cloud-config"
     echo "ssh_authorized_keys:"
     sed -e 's/^/ - /'
@@ -156,6 +153,7 @@ if [ -n "${SWTPM_DIR}" ]; then
         amd64-usr)
             TPM_DEV=tpm-tis ;;
         arm64-usr)
+
             TPM_DEV=tpm-tis-device ;;
         *) die "Unsupported arch" ;;
     esac
@@ -179,6 +177,7 @@ if [ -z "${CONFIG_IMAGE}" ]; then
     fi
     # shellcheck disable=SC2064
     trap "rm -rf '$CONFIG_DRIVE'" EXIT
+
     mkdir -p "${CONFIG_DRIVE}/openstack/latest"
 
 
@@ -189,6 +188,7 @@ if [ -z "${CONFIG_IMAGE}" ]; then
         fi
         SSH_KEYS_TEXT=$(cat "$SSH_KEYS")
         ret=$?
+
         if [ "$ret" -ne 0 ] || [ -z "$SSH_KEYS_TEXT" ]; then
             echo "$0: Failed to read SSH keys from $SSH_KEYS" >&2
             exit 1
@@ -196,6 +196,7 @@ if [ -z "${CONFIG_IMAGE}" ]; then
         echo "$SSH_KEYS_TEXT" | write_ssh_keys > \
             "${CONFIG_DRIVE}/openstack/latest/user_data"
     elif [ -n "${CLOUD_CONFIG_FILE}" ]; then
+
         cp "${CLOUD_CONFIG_FILE}" "${CONFIG_DRIVE}/openstack/latest/user_data"
         ret=$?
         if [ "$ret" -ne 0 ]; then
@@ -209,19 +210,17 @@ if [ -z "${CONFIG_IMAGE}" ]; then
 fi
 
 # Start assembling our default command line arguments
-QEMU_PORT_FORWARDS=""
-for port in "${PORT_FORWARDS[@]}"; do
-    QEMU_PORT_FORWARDS+=",hostfwd=tcp::${port}-:${port#*:}"
-done
-
 if [ "${SAFE_ARGS}" -eq 1 ]; then
     # Disable KVM, for testing things like UEFI which don't like it
     set -- -machine accel=tcg "$@"
 else
+
     case "${VM_BOARD}+$(uname -m)" in
         amd64-usr+x86_64)
+
             set -- -global ICH9-LPC.disable_s3=1 \
                    -global driver=cfi.pflash01,property=secure,value=on \
+
                    "$@"
             # Emulate the host CPU closely in both features and cores.
             set -- -machine q35,accel=kvm:hvf:tcg,smm=on -cpu host -smp "${VM_NCPUS}" "$@"
@@ -236,6 +235,7 @@ else
             elif test "${VM_NCPUS}" -gt 2 ; then
                 VM_NCPUS=2
             fi
+
             set -- -machine virt -cpu cortex-a57 -smp "${VM_NCPUS}" -nographic "$@" ;;
         *)
             die "Unsupported arch" ;;
@@ -258,16 +258,22 @@ if [ -n "${VM_IMAGE}" ]; then
         amd64-usr)
             set -- -drive if=virtio,file="${SCRIPT_DIR}/${VM_IMAGE}" "$@" ;;
         arm64-usr)
+
             set -- -drive if=none,id=blk,file="${SCRIPT_DIR}/${VM_IMAGE}" \
+
             -device virtio-blk-device,drive=blk "$@"
             ;;
         *) die "Unsupported arch" ;;
+
     esac
 fi
 
+
 if [ -n "${VM_KERNEL}" ]; then
     set -- -kernel "${SCRIPT_DIR}/${VM_KERNEL}" "$@"
+
 fi
+
 
 if [ -n "${VM_INITRD}" ]; then
     set -- -initrd "${SCRIPT_DIR}/${VM_INITRD}" "$@"
@@ -280,12 +286,14 @@ fi
 if [ -n "${VM_CDROM}" ]; then
     set -- -boot order=d \
 	-drive file="${SCRIPT_DIR}/${VM_CDROM}",media=cdrom,format=raw "$@"
+
 fi
+
 
 if [ -n "${VM_PFLASH_RO}" ] && [ -n "${VM_PFLASH_RW}" ]; then
     set -- \
-        -drive if=pflash,unit=0,file="${SCRIPT_DIR}/${VM_PFLASH_RO}",format=raw,readonly=on \
-        -drive if=pflash,unit=1,file="${SCRIPT_DIR}/${VM_PFLASH_RW}",format=raw "$@"
+        -drive if=pflash,unit=0,file="${SCRIPT_DIR}/${VM_PFLASH_RO}",format=qcow2,readonly=on \
+        -drive if=pflash,unit=1,file="${SCRIPT_DIR}/${VM_PFLASH_RW}",format=qcow2 "$@"
 fi
 
 if [ -n "${IGNITION_CONFIG_FILE}" ]; then
@@ -295,20 +303,22 @@ fi
 case "${VM_BOARD}" in
     amd64-usr)
         # Default to KVM, fall back on full emulation
-        echo "arg: ${QEMU_PORT_FORWARDS}" ; \
         qemu-system-x86_64 \
+
             -name "$VM_NAME" \
             -m ${VM_MEMORY} \
-            -netdev user,id=eth0${QEMU_PORT_FORWARDS},hostname="${VM_NAME}" \
+            -netdev user,id=eth0,hostfwd=tcp::"${SSH_PORT}"-:22,hostname="${VM_NAME}" \
             -device virtio-net-pci,netdev=eth0 \
+
             -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0 \
             "$@"
+
         ;;
     arm64-usr)
         qemu-system-aarch64 \
             -name "$VM_NAME" \
             -m ${VM_MEMORY} \
-            -netdev user,id=eth0${QEMU_PORT_FORWARDS},hostname="${VM_NAME}" \
+            -netdev user,id=eth0,hostfwd=tcp::"${SSH_PORT}"-:22,hostname="${VM_NAME}" \
             -device virtio-net-device,netdev=eth0 \
             -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0 \
             "$@"
