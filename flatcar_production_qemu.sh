@@ -19,7 +19,7 @@ IGNITION_CONFIG_FILE=""
 CONFIG_IMAGE=""
 SWTPM_DIR=
 SAFE_ARGS=0
-PORT_FORWARDS=()
+PORT_FORWARDS=""
 USAGE="Usage: $0 [-a authorized_keys] [-f host_port:guest_port] [--] [qemu options...]
 Options:
     -i FILE     File containing an Ignition config
@@ -87,7 +87,7 @@ while [ $# -ge 1 ]; do
             SSH_PORT="$2"
             shift 2 ;;
         -f|-forward-port)
-            PORT_FORWARDS+=("$2")
+            PORT_FORWARDS="${PORT_FORWARDS} $2"
             shift 2 ;;
         -s|-safe)
             SAFE_ARGS=1
@@ -209,10 +209,14 @@ if [ -z "${CONFIG_IMAGE}" ]; then
 fi
 
 # Start assembling our default command line arguments
+# Process port forwards
 QEMU_PORT_FORWARDS=""
-for port in "${PORT_FORWARDS[@]}"; do
-    QEMU_PORT_FORWARDS+=",hostfwd=tcp::${port}-:${port#*:}"
+for port in $PORT_FORWARDS; do
+    host_port=$(echo "$port" | cut -d':' -f1)
+    guest_port=$(echo "$port" | cut -d':' -f2)
+    QEMU_PORT_FORWARDS="${QEMU_PORT_FORWARDS},hostfwd=tcp::${host_port}-:${guest_port}"
 done
+QEMU_PORT_FORWARDS="${QEMU_PORT_FORWARDS#,}"
 
 if [ "${SAFE_ARGS}" -eq 1 ]; then
     # Disable KVM, for testing things like UEFI which don't like it
@@ -295,11 +299,10 @@ fi
 case "${VM_BOARD}" in
     amd64-usr)
         # Default to KVM, fall back on full emulation
-        echo "arg: ${QEMU_PORT_FORWARDS}" ; \
         qemu-system-x86_64 \
             -name "$VM_NAME" \
             -m ${VM_MEMORY} \
-            -netdev user,id=eth0${QEMU_PORT_FORWARDS},hostname="${VM_NAME}" \
+            -netdev user,id=eth0,${QEMU_PORT_FORWARDS},hostname="${VM_NAME}" \
             -device virtio-net-pci,netdev=eth0 \
             -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0 \
             "$@"
@@ -308,7 +311,7 @@ case "${VM_BOARD}" in
         qemu-system-aarch64 \
             -name "$VM_NAME" \
             -m ${VM_MEMORY} \
-            -netdev user,id=eth0${QEMU_PORT_FORWARDS},hostname="${VM_NAME}" \
+            -netdev user,id=eth0,${QEMU_PORT_FORWARDS},hostname="${VM_NAME}" \
             -device virtio-net-device,netdev=eth0 \
             -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0 \
             "$@"
