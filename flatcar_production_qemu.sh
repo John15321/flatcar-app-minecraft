@@ -28,8 +28,8 @@ Options:
     -c FILE     Config drive as an iso or fat filesystem image.
     -a FILE     SSH public keys for login access. [~/.ssh/id_{dsa,rsa}.pub]
     -p PORT     The port on localhost to map to the VM's sshd. [2222]
-    -f PORT     Forward host_port:guest_port.
     -I FILE     Set a custom image file.
+    -f PORT     Forward host_port:guest_port.
     -M MB       Set VM memory in MBs.
     -T DIR      Add a software TPM2 device through swtpm which stores secrets
                 and the control socket to the given directory. This may need
@@ -87,7 +87,7 @@ while [ $# -ge 1 ]; do
             SSH_PORT="$2"
             shift 2 ;;
         -f|-forward-port)
-            PORT_FORWARDS="${PORT_FORWARDS} $2"
+            FORWARDED_PORTS="${FORWARDED_PORTS} $2"
             shift 2 ;;
         -s|-safe)
             SAFE_ARGS=1
@@ -208,16 +208,16 @@ if [ -z "${CONFIG_IMAGE}" ]; then
     fi
 fi
 
-# Start assembling our default command line arguments
 # Process port forwards
-QEMU_PORT_FORWARDS=""
-for port in $PORT_FORWARDS; do
-    host_port=$(echo "$port" | cut -d':' -f1)
-    guest_port=$(echo "$port" | cut -d':' -f2)
-    QEMU_PORT_FORWARDS="${QEMU_PORT_FORWARDS},hostfwd=tcp::${host_port}-:${guest_port}"
+QEMU_FORWARDED_PORTS=""
+for port in ${FORWARDED_PORTS}; do
+    host_port=${port%:*}
+    guest_port=${port#*:}
+    QEMU_FORWARDED_PORTS="${QEMU_FORWARDED_PORTS},hostfwd=tcp::${host_port}-:${guest_port}"
 done
-QEMU_PORT_FORWARDS="${QEMU_PORT_FORWARDS#,}"
+QEMU_FORWARDED_PORTS="${QEMU_FORWARDED_PORTS#,}"
 
+# Start assembling our default command line arguments
 if [ "${SAFE_ARGS}" -eq 1 ]; then
     # Disable KVM, for testing things like UEFI which don't like it
     set -- -machine accel=tcg "$@"
@@ -302,7 +302,7 @@ case "${VM_BOARD}" in
         qemu-system-x86_64 \
             -name "$VM_NAME" \
             -m ${VM_MEMORY} \
-            -netdev user,id=eth0,${QEMU_PORT_FORWARDS},hostname="${VM_NAME}" \
+            -netdev user,id=eth0${QEMU_FORWARDED_PORTS:+,}${QEMU_FORWARDED_PORTS},hostfwd=tcp::"${SSH_PORT}"-:22,hostname="${VM_NAME}" \
             -device virtio-net-pci,netdev=eth0 \
             -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0 \
             "$@"
@@ -311,7 +311,7 @@ case "${VM_BOARD}" in
         qemu-system-aarch64 \
             -name "$VM_NAME" \
             -m ${VM_MEMORY} \
-            -netdev user,id=eth0,${QEMU_PORT_FORWARDS},hostname="${VM_NAME}" \
+            -netdev user,id=eth0${QEMU_FORWARDED_PORTS:+,}${QEMU_FORWARDED_PORTS},hostfwd=tcp::"${SSH_PORT}"-:22,hostname="${VM_NAME}" \
             -device virtio-net-device,netdev=eth0 \
             -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0 \
             "$@"
