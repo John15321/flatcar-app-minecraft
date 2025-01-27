@@ -20,7 +20,7 @@ CONFIG_IMAGE=""
 SWTPM_DIR=
 SAFE_ARGS=0
 PORT_FORWARDS=""
-USAGE="Usage: $0 [-a authorized_keys] [-f host_port:guest_port] [--] [qemu options...]
+USAGE="Usage: $0 [-a authorized_keys] [--] [qemu options...]
 Options:
     -i FILE     File containing an Ignition config
                 (needs \"-append 'flatcar.first_boot=1'\" for already-booted or PXE images)
