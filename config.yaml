@@ -2,23 +2,19 @@ variant: flatcar
 version: 1.0.0
 storage:
   files:
-    - path: /etc/systemd/system/sftp-mc.service
+    - path: /etc/systemd/system/sshd-sftp.service
       mode: 0644
       contents:
         inline: |
           [Unit]
-          Description=SFTP Server for PaperMC Data
-          After=docker.service
-          Requires=docker.service
+          Description=Separate SFTP Server on Port 2223
+          After=network-online.target sshd.service
+          Wants=network-online.target
 
           [Service]
-          Restart=on-failure
-          RestartSec=30
-          StandardOutput=journal
-          StandardError=journal
-          ExecStart=/usr/bin/docker run --name sftp -p 2223:22 -v papermc-data:/home/minecraftuser/papermc ghcr.io/atmoz/sftp/debian minecraftuser:password:::papermc
-          ExecStop=/usr/bin/docker stop sftp
-          ExecStopPost=/usr/bin/docker rm sftp
+          ExecStart=/usr/sbin/sshd -D -f /etc/ssh/sshd_config -p 2223
+          Restart=always
+          RestartSec=10
 
           [Install]
           WantedBy=multi-user.target
@@ -33,6 +29,8 @@ storage:
           Requires=docker.service
 
           [Service]
+          User=core
+          Group=core
           Restart=always
           RestartSec=20
           StandardOutput=journal
@@ -45,7 +43,20 @@ storage:
           Environment="ENABLE_RCON=true"
           Environment="RCON_PASSWORD=your_rcon_password"
           Environment="RCON_PORT=25575"
-          ExecStart=/usr/bin/docker run --name papermc -p 25565:25565 -p 25575:25575 --memory="4g" --memory-swap="4g"  -e EULA=true -e MC_VERSION=latest -e PAPER_BUILD=latest -e MC_RAM=4G -e JAVA_OPTS="-Xms4G -Xmx4G -XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M" -e ENABLE_RCON=true -e RCON_PASSWORD=your_rcon_password -e RCON_PORT=25575 -v papermc-data:/papermc phyremaster/papermc
+          # Ensure the directory exists & set correct permissions
+          ExecStartPre=/bin/mkdir -p /home/core/minecraft
+          ExecStartPre=/bin/chown -R core:core /home/core/minecraft
+          ExecStartPre=/bin/chmod -R 755 /home/core/minecraft
+          ExecStart=/usr/bin/docker run --user 500:500 --name papermc \
+            -p 25565:25565 -p 25575:25575 \
+            --memory="4g" --memory-swap="4g" \
+            -e EULA=true \
+            -e MC_RAM=4G \
+            -e ENABLE_RCON=true \
+            -e RCON_PASSWORD=your_rcon_password \
+            -e RCON_PORT=25575 \
+            -v /home/core/minecraft:/papermc \
+            ghcr.io/thijmengthn/papermc
           ExecStop=/usr/bin/docker stop papermc
           ExecStopPost=/usr/bin/docker rm papermc
 
@@ -56,7 +67,7 @@ systemd:
   units:
     - name: docker.service
       enabled: true
-    - name: sftp-mc.service
-      enabled: true
     - name: minecraft.service
+      enabled: true
+    - name: sshd-sftp.service
       enabled: true
