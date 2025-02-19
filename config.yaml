@@ -3,12 +3,10 @@ version: 1.0.0
 storage:
   files:
     ########################################################################
-    # 1) Base environment file (papermc.env)
+    # Environment file (papermc.env)
     #
     # This file contains the "universal" environment variables for the
     # Minecraft Docker container, such as EULA acceptance and RCON info.
-    # None of the advanced Java parameters live here; those are in separate
-    # ".env" files.
     ########################################################################
     - path: /etc/systemd/system/papermc.env
       mode: 0644
@@ -28,74 +26,16 @@ storage:
 
           # This is the total Docker container memory. By default, set
           # to 4G. You can adjust this if you plan to switch environment
-          # tiers (e.g., 2G, 8G, etc.).
-          MC_RAM=4G
+          # e.g., 2G, 8G, etc.
+          DOCKER_RAM=4G
 
+          # This is the memory setting for the Java process that will run the Minecraft server
+          # It would be a bit lower than the total Docker container memory
+          # to allow for the operating system and other processes to run
+          MC_RAM=3G
 
-    ########################################################################
-    # 2) Minimal tier environment (minimal.env)
-    #
-    # Designed for very small servers (Docker limit of ~2GB). We set the
-    # heap to ~1.5G, leaving ~0.5G overhead for the OS, metaspace, etc.
-    #
-    # Short Explanations:
-    #   -Xms / -Xmx : Minimum and maximum Java heap sizes.
-    #   -XX:+UseG1GC : Use the G1 (Garbage First) garbage collector.
-    #   -XX:G1NewSizePercent / -XX:G1MaxNewSizePercent : Controls the size
-    #     of the "young" generation to handle short-lived objects better.
-    #   -XX:G1ReservePercent : Keeps a portion of heap in reserve to avoid
-    #     'to-space exhaustion' during GCs.
-    #   -XX:SurvivorRatio : Controls ratio of Eden:Survivor spaces.
-    #   -XX:MaxTenuringThreshold : Number of times an object can remain in
-    #     survivor before tenured to the old generation.
-    #   -XX:MaxGCPauseMillis : Target max pause time for GC (in ms).
-    #   -XX:+DisableExplicitGC : Prevents plugins from forcing GC.
-    #   -XX:+AlwaysPreTouch : Pre-allocates all memory pages on startup
-    #     for better performance.
-    #   -Dusing.aikars.flags / -Daikars.new.flags : Helpful markers for
-    #     identifying you’re using Aikar’s recommended GC flags.
-    ########################################################################
-    - path: /etc/systemd/system/minimal.env
-      mode: 0644
-      contents:
-        inline: |
-          # Minimal tier: for Docker limit ~2GB
-          JAVA_OPTS="-Xms1.5G -Xmx1.5G \
-           -XX:+UseG1GC \
-           -XX:+ParallelRefProcEnabled \
-           -XX:+UnlockExperimentalVMOptions \
-           -XX:+DisableExplicitGC \
-           -XX:+AlwaysPreTouch \
-           -XX:G1NewSizePercent=20 \
-           -XX:G1MaxNewSizePercent=40 \
-           -XX:G1ReservePercent=20 \
-           -XX:G1HeapWastePercent=5 \
-           -XX:G1MixedGCCountTarget=4 \
-           -XX:InitiatingHeapOccupancyPercent=15 \
-           -XX:G1MixedGCLiveThresholdPercent=90 \
-           -XX:G1RSetUpdatingPauseTimePercent=5 \
-           -XX:SurvivorRatio=32 \
-           -XX:MaxTenuringThreshold=1 \
-           -XX:MaxGCPauseMillis=150 \
-           -XX:+PerfDisableSharedMem \
-           -Dusing.aikars.flags=https://mcflags.emc.gs \
-           -Daikars.new.flags=true"
-
-
-    ########################################################################
-    # 3) Small tier environment (small.env)
-    #
-    # For a Docker limit of ~4GB. The heap is ~3G, leaving ~1G overhead.
-    # Similar G1-based flags, but includes a G1 Heap Region size of 8M
-    # (recommended by Aikar for moderate heaps).
-    ########################################################################
-    - path: /etc/systemd/system/small.env
-      mode: 0644
-      contents:
-        inline: |
-          # Small tier: for Docker limit ~4GB
-          JAVA_OPTS="-Xms3G -Xmx3G \
-           -XX:+UseG1GC \
+          # Java specific options for tuning the JVM
+          JAVA_OPTS="-XX:+UseG1GC \
            -XX:+ParallelRefProcEnabled \
            -XX:+UnlockExperimentalVMOptions \
            -XX:+DisableExplicitGC \
@@ -117,98 +57,6 @@ storage:
            -Daikars.new.flags=true"
 
 
-    ########################################################################
-    # 4) Medium tier environment (medium.env)
-    #
-    # For a Docker limit of ~8GB. The heap is ~6G, leaving ~2G overhead.
-    # This handles mid-sized servers with moderate plugins/player counts.
-    ########################################################################
-    - path: /etc/systemd/system/medium.env
-      mode: 0644
-      contents:
-        inline: |
-          # Medium tier: for Docker limit ~8GB
-          JAVA_OPTS="-Xms6G -Xmx6G \
-           -XX:+UseG1GC \
-           -XX:+ParallelRefProcEnabled \
-           -XX:+UnlockExperimentalVMOptions \
-           -XX:+DisableExplicitGC \
-           -XX:+AlwaysPreTouch \
-           -XX:G1HeapRegionSize=8M \
-           -XX:G1NewSizePercent=20 \
-           -XX:G1MaxNewSizePercent=40 \
-           -XX:G1ReservePercent=20 \
-           -XX:G1HeapWastePercent=5 \
-           -XX:G1MixedGCCountTarget=4 \
-           -XX:InitiatingHeapOccupancyPercent=15 \
-           -XX:G1MixedGCLiveThresholdPercent=90 \
-           -XX:G1RSetUpdatingPauseTimePercent=5 \
-           -XX:SurvivorRatio=32 \
-           -XX:MaxTenuringThreshold=1 \
-           -XX:MaxGCPauseMillis=150 \
-           -XX:+PerfDisableSharedMem \
-           -Dusing.aikars.flags=https://mcflags.emc.gs \
-           -Daikars.new.flags=true"
-
-
-    ########################################################################
-    # 5) Large tier environment (large.env)
-    #
-    # For a Docker limit of ~12–16GB. The heap is ~10G, leaving 2–6GB overhead
-    # for the system. This is suitable for 20-50 players or heavily modded servers.
-    ########################################################################
-    - path: /etc/systemd/system/large.env
-      mode: 0644
-      contents:
-        inline: |
-          # Large tier: for Docker limit ~12-16+ GB
-          JAVA_OPTS="-Xms10G -Xmx10G \
-           -XX:+UseG1GC \
-           -XX:+ParallelRefProcEnabled \
-           -XX:+UnlockExperimentalVMOptions \
-           -XX:+DisableExplicitGC \
-           -XX:+AlwaysPreTouch \
-           -XX:G1HeapRegionSize=8M \
-           -XX:G1NewSizePercent=20 \
-           -XX:G1MaxNewSizePercent=40 \
-           -XX:G1ReservePercent=20 \
-           -XX:G1HeapWastePercent=5 \
-           -XX:G1MixedGCCountTarget=4 \
-           -XX:InitiatingHeapOccupancyPercent=15 \
-           -XX:G1MixedGCLiveThresholdPercent=90 \
-           -XX:G1RSetUpdatingPauseTimePercent=5 \
-           -XX:SurvivorRatio=32 \
-           -XX:MaxTenuringThreshold=1 \
-           -XX:MaxGCPauseMillis=150 \
-           -XX:+PerfDisableSharedMem \
-           -Dusing.aikars.flags=https://mcflags.emc.gs \
-           -Daikars.new.flags=true"
-
-    ########################################################################
-    # 6) Custom environment file (custom.env)
-    #
-    # This file is intentionally left mostly empty, so server admins can
-    # place or tweak their own Java flags without modifying the default tiers.
-    #
-    # Example use case:
-    #   - You want 5G heap, or some advanced GC logging flags, or more exotic
-    #     G1 tunings. Just remove the '#' from the line referencing this file
-    #     in minecraft.service and fill out your custom parameters below.
-    ########################################################################
-    - path: /etc/systemd/system/custom.env
-      mode: 0644
-      contents:
-        inline: |
-          # Custom environment file for advanced or custom Java tuning
-          #
-          # Example usage:
-          # JAVA_OPTS="-Xms5G -Xmx5G \
-          #  -XX:+UseG1GC \
-          #  -XX:+UnlockExperimentalVMOptions \
-          #  -XX:+DisableExplicitGC \
-          #  ... etc. ... "
-          #
-          # By default, this is empty.
 
     ########################################################################
     # A separate SSHD-based SFTP service. Allows the administrator to access
@@ -255,19 +103,13 @@ storage:
           # Always load the base environment variables (EULA, RCON, etc.)
           EnvironmentFile=/etc/systemd/system/papermc.env
 
-          # Uncomment exactly ONE tier:
-          #EnvironmentFile=/etc/systemd/system/minimal.env
-          EnvironmentFile=/etc/systemd/system/small.env
-          #EnvironmentFile=/etc/systemd/system/medium.env
-          #EnvironmentFile=/etc/systemd/system/large.env
-
           # Docker run command: we pass environment variables (EULA, JAVA_OPTS, etc.)
           ExecStart=/usr/bin/docker run \
             --name papermc \
             -p 25565:25565 \
             -p 25575:25575 \
-            --memory="${MC_RAM}" \
-            --memory-swap="${MC_RAM}" \
+            --memory="${DOCKER_RAM}" \
+            --memory-swap="${DOCKER_RAM}" \
             -e EULA=${EULA} \
             -e MC_VERSION=${MC_VERSION} \
             -e PAPER_BUILD=${PAPER_BUILD} \

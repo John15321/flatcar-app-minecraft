@@ -295,9 +295,9 @@ storage:
 ```
 
 These variables are **referenced by** `minecraft.service` and **apply universally**, regardless of which Java tier you select.
-
+<!-- TODO: This whole section needs to be reworked now -->
 ---
-
+<!-- 
 ### 4.2 Tiered Environment Files (`minimal.env`, `small.env`, `medium.env`, `large.env`)
 
 These **four environment files** each define different memory allocations and G1GC parameters tailored for various server sizes. You can pick **one** to load in `minecraft.service` (or skip them all in favor of `custom.env`).
@@ -347,7 +347,7 @@ An **empty template** for those who want to define their **own** Java options wi
       # JAVA_OPTS="-Xms5G -Xmx5G ..."
       #
       # By default, this is empty.
-```
+``` -->
 
 ---
 
