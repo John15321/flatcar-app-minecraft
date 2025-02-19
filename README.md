@@ -1,6 +1,13 @@
 # Flatcar Minecraft Server
+![Flatcar OS](https://img.shields.io/badge/Flatcar-App-blue?logo=data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAyNi4wLjMsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjxzdmcgdmVyc2lvbj0iMS4wIiBpZD0ia2F0bWFuXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4Ig0KCSB2aWV3Qm94PSIwIDAgODAwIDYwMCIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgODAwIDYwMDsiIHhtbDpzcGFjZT0icHJlc2VydmUiPg0KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4NCgkuc3Qwe2ZpbGw6IzA5QkFDODt9DQo8L3N0eWxlPg0KPHBhdGggY2xhc3M9InN0MCIgZD0iTTQ0MCwxODIuOGgtMTUuOXYxNS45SDQ0MFYxODIuOHoiLz4NCjxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik00MDAuNSwzMTcuOWgtMzEuOXYxNS45aDMxLjlWMzE3Ljl6Ii8+DQo8cGF0aCBjbGFzcz0ic3QwIiBkPSJNNTQzLjgsMzE3LjlINTEydjE1LjloMzEuOVYzMTcuOXoiLz4NCjxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik02NTUuMiw0MjAuOXYtOTUuNGgtMTUuOXY5NS40aC0xNS45VjI2MmgtMzEuOVYxMzQuOEgyMDkuNFYyNjJoLTMxLjl2MTU5aC0xNS45di05NS40aC0xNnY5NS40aC0xNS45djMxLjINCgloMzEuOXYxNS44aDQ3Ljh2LTE1LjhoMTUuOXYxNS44SDI3M3YtMTUuOGgyNTQuOHYxNS44aDQ3Ljh2LTE1LjhoMTUuOXYxNS44aDQ3Ljh2LTE1LjhoMzEuOXYtMzEuMkg2NTUuMnogTTQ4Ny44LDE1MWg3OS42djMxLjgNCgloLTIzLjZ2NjMuNkg1MTJ2LTYzLjZoLTI0LjJMNDg3LjgsMTUxTDQ4Ny44LDE1MXogTTIzMywyMTQuNlYxNTFoNjMuN3YyMy41aC0zMS45djE1LjhoMzEuOXYyNC4yaC0zMS45djMxLjhIMjMzVjIxNC42eiBNMzA1LDMxNy45DQoJdjE1LjhoLTQ3Ljh2MzEuOEgzMDV2NDcuN2gtOTUuNVYyODYuMUgzMDVMMzA1LDMxNy45eiBNMzEyLjYsMjQ2LjRWMTUxaDMxLjl2NjMuNmgzMS45djMxLjhMMzEyLjYsMjQ2LjRMMzEyLjYsMjQ2LjRMMzEyLjYsMjQ2LjR6DQoJIE00NDguMywzMTcuOXY5NS40aC00Ny44di00Ny43aC0zMS45djQ3LjdoLTQ3LjhWMzAyaDE1Ljl2LTE1LjhoOTUuNVYzMDJoMTUuOUw0NDguMywzMTcuOXogTTQ0MCwyNDYuNHYtMzEuOGgtMTUuOXYzMS44aC0zMS45DQoJdi03OS41aDE1Ljl2LTE1LjhoNDcuOHYxNS44aDE1Ljl2NzkuNUg0NDB6IE01OTEuNiwzMTcuOXY0Ny43aC0xNS45djE1LjhoMTUuOXYzMS44aC00Ny44di0zMS43SDUyOHYtMTUuOGgtMTUuOXY0Ny43aC00Ny44VjI4Ni4xDQoJaDEyNy4zVjMxNy45eiIvPg0KPC9zdmc+DQo=)
+![Twitter Follow](https://img.shields.io/twitter/follow/flatcar?style=social)
+![License](https://img.shields.io/github/license/John15321/mc-flatcar)
 
-!["AI generated image](flatcar_mc_logo.png)
+<div align="center">
+  <img src="./imgs/flatcar_mc_logo.png" width="50%">
+</div>
+
+
 
 > **A lightweight, containerized PaperMC setup on [Flatcar Container Linux](https://www.flatcar.org/).**
 > **Easily deployable on Azure or any other cloud/provider.**
@@ -8,31 +15,31 @@
 
 ---
 
-## Table of Contents
+## Table of Contents 📚
 
 - [Flatcar Minecraft Server](#flatcar-minecraft-server)
-  - [Table of Contents](#table-of-contents)
-  - [Introduction \& Purpose](#introduction--purpose)
+  - [Table of Contents 📚](#table-of-contents-)
+  - [Introduction \& Purpose 🌟](#introduction--purpose-)
     - [Why Flatcar?](#why-flatcar)
     - [Why Containers for Minecraft?](#why-containers-for-minecraft)
     - [Optional SFTP \& Java Tiers](#optional-sftp--java-tiers)
-  - [Prerequisites \& Requirements](#prerequisites--requirements)
+  - [Prerequisites \& Requirements 🛠️](#prerequisites--requirements-️)
     - [Notes on Firewalls \& Security](#notes-on-firewalls--security)
-  - [Overview of Steps](#overview-of-steps)
+  - [Overview of Steps 📝](#overview-of-steps-)
     - [3.1 Environment Variables \& Java Tiers](#31-environment-variables--java-tiers)
       - [Common Env Vars](#common-env-vars)
     - [3.2 Detailed Java/G1GC Settings](#32-detailed-javag1gc-settings)
     - [3.3 Memory Tiers and Aikar’s Flags](#33-memory-tiers-and-aikars-flags)
       - [Where to Change Settings](#where-to-change-settings)
     - [3.4 SFTP Service Explanation](#34-sftp-service-explanation)
-  - [Summary of `config.yaml` Contents](#summary-of-configyaml-contents)
+  - [Summary of `config.yaml` Contents 📄](#summary-of-configyaml-contents-)
     - [4.1 `papermc.env` (Base Environment File)](#41-papermcenv-base-environment-file)
     - [4.2 Tiered Environment Files (`minimal.env`, `small.env`, `medium.env`, `large.env`)](#42-tiered-environment-files-minimalenv-smallenv-mediumenv-largeenv)
     - [4.3  `custom.env`](#43--customenv)
     - [4.4 `sshd-sftp.service` (Alternate SFTP on Port 2223)](#44-sshd-sftpservice-alternate-sftp-on-port-2223)
     - [4.5 `minecraft.service` (Main PaperMC Service)](#45-minecraftservice-main-papermc-service)
       - [Systemd Units for Docker \& Enabling Services](#systemd-units-for-docker--enabling-services)
-  - [Example: Running Flatcar Locally with QEMU](#example-running-flatcar-locally-with-qemu)
+  - [Example: Running Flatcar Locally with QEMU 🕹️](#example-running-flatcar-locally-with-qemu-️)
     - [5.1 Download the Flatcar QEMU Image](#51-download-the-flatcar-qemu-image)
     - [5.2 Prepare Your Ignition (Butane) Config](#52-prepare-your-ignition-butane-config)
     - [5.3 Launch QEMU with Port Forwarding](#53-launch-qemu-with-port-forwarding)
@@ -50,7 +57,7 @@
     - [6.6 Prepare the Ignition File (Using Butane)](#66-prepare-the-ignition-file-using-butane)
     - [6.7 Deploy the Flatcar VM](#67-deploy-the-flatcar-vm)
     - [6.8 Open Ports for Minecraft](#68-open-ports-for-minecraft)
-      - [Security Tip 🔐](#security-tip-)
+      - [Security Tip](#security-tip)
     - [6.9 SSH into Your VM \& Check Services](#69-ssh-into-your-vm--check-services)
     - [6.10 Connecting to RCON](#610-connecting-to-rcon)
     - [6.11 Connecting via SFTP](#611-connecting-via-sftp)
@@ -58,9 +65,9 @@
 
 ---
 
-## Introduction & Purpose
+## Introduction & Purpose 🌟
 
-Welcome to the **Flatcar Minecraft Server** project! This repository shows how to run a [PaperMC](https://papermc.io/) server on **Flatcar Container Linux** in a **containerized** fashion. Although our examples focus on **Azure** (for convenience and clarity), you can use the same principles on **any** platform that supports Flatcar—be it your own data center, another public cloud, or even local VMs.
+Welcome to the **Flatcar Minecraft Server** project! This repository shows how to run a [PaperMC](https://papermc.io/) server on **Flatcar Container Linux** in a **containerized** fashion. Although our examples focus on **Azure** (for convenience and clarity), you can use the same principles on **any** platform that supports Flatcar-be it your own data center, another public cloud, or even local VMs.
 
 ### Why Flatcar?
 
@@ -76,7 +83,7 @@ Welcome to the **Flatcar Minecraft Server** project! This repository shows how t
 
 ### Optional SFTP & Java Tiers
 
-1. **SFTP**: An optional SSH-based SFTP service makes uploading or editing server files (e.g., plugins, world data) straightforward—no extra file-transfer tooling needed beyond your standard SSH key.
+1. **SFTP**: An optional SSH-based SFTP service makes uploading or editing server files (e.g., plugins, world data) straightforward-no extra file-transfer tooling needed beyond your standard SSH key.
 2. **Java Configuration Tiers**: We provide multiple environment configs (Minimal, Small, Medium, Large, or a fully Custom) to match different server sizes. If you have just a few players, pick a smaller tier. If you’re running a bustling community, crank up the RAM and use the large tier.
 
 Both are entirely **optional**. You can skip the SFTP container if you prefer other file management methods, and you can continue using your own Java flags if you don’t need our tiered approach.
@@ -90,9 +97,9 @@ Both are entirely **optional**. You can skip the SFTP container if you prefer ot
 
 
 
-## Prerequisites & Requirements
+## Prerequisites & Requirements 🛠️
 
-Although our walkthrough includes **Azure** examples, you can adapt these steps to **any platform** that supports [Flatcar Container Linux](https://www.flatcar.org/)—on-prem, another public cloud, or even a local VM. Here’s what you’ll need:
+Although our walkthrough includes **Azure** examples, you can adapt these steps to **any platform** that supports [Flatcar Container Linux](https://www.flatcar.org/)-on-prem, another public cloud, or even a local VM. Here’s what you’ll need:
 
 - **Flatcar-Ready Environment**
   Any server or virtual machine running a Flatcar image, or the ability to create one (via Azure, AWS, your own hypervisor, etc.).
@@ -104,7 +111,7 @@ Although our walkthrough includes **Azure** examples, you can adapt these steps 
   If you plan to **locally** generate your Ignition file from the Butane YAML, you’ll need the [Butane CLI](https://coreos.github.io/butane/) or Docker image. If you prefer, you can also write or edit the Ignition config directly.
 
 - **Basic Container & CLI Knowledge**
-  Because we’re containerizing Minecraft, knowing some Docker basics—like pulling images, viewing logs, or stopping containers—will help troubleshoot any issues.
+  Because we’re containerizing Minecraft, knowing some Docker basics-like pulling images, viewing logs, or stopping containers-will help troubleshoot any issues.
 
 ### Notes on Firewalls & Security
 - This example does **not** automatically configure OS-level firewalls beyond what Azure (or your cloud/provider) might offer. Make sure to open or secure ports if you’re using another environment.
@@ -113,18 +120,18 @@ Although our walkthrough includes **Azure** examples, you can adapt these steps 
 > **Tip**: If you’re **not** using Azure, just skip any `az` commands in the examples and deploy your Flatcar instance by your platform’s usual means. Then apply the same Butane/Ignition configuration to set up Minecraft services.
 
 
-## Overview of Steps
+## Overview of Steps 📝
 
 Below is a **high-level** outline of how you’ll set up and run your Minecraft server on Flatcar. Each step can be adjusted based on where you’re hosting (Azure, local VM, etc.):
 
 1. **Set or Adjust Environment Variables**
-   Decide on your Minecraft version, memory limits, RCON settings, and Java flags (GC tuning). These variables live in the Butane config—or can be edited later on the VM.
+   Decide on your Minecraft version, memory limits, RCON settings, and Java flags (GC tuning). These variables live in the Butane config-or can be edited later on the VM.
 
 2. **Generate (or Obtain) the Final Ignition File**
    Using [Butane](https://coreos.github.io/butane/), convert the YAML config into an Ignition file (`config.ign`) that Flatcar understands.
 
 3. **Deploy Your Flatcar Instance**
-   Launch a new Flatcar machine—on Azure, AWS, or your local hypervisor—and provide the Ignition file as “custom data” (or “user data”).
+   Launch a new Flatcar machine-on Azure, AWS, or your local hypervisor-and provide the Ignition file as “custom data” (or “user data”).
 
 4. **Open Ports / Configure Networking**
    Ensure Minecraft (25565), RCON (25575), and SFTP (2223) are accessible if you’re hosting publicly. On Azure, this means adding inbound security rules. On a local environment, you might modify your firewall or router.
@@ -213,7 +220,7 @@ Choosing how much memory to give your server is often a balancing act. Too littl
 
 If you’re unsure, it’s best to start around **4 GB** (Small) and see how your server performs. Check usage with docker stats or in the game logs. If you have 10–20 players or a lot of plugins, you might need **8 GB** or more.
 
-For an exact set of recommended flags (or if you have special requirements), visit PaperMC’s own [Start Script Generator](https://docs.papermc.io/misc/tools/start-script-gen). Just remember there is **no one-size-fits-all** solution—monitor your server and adjust.
+For an exact set of recommended flags (or if you have special requirements), visit PaperMC’s own [Start Script Generator](https://docs.papermc.io/misc/tools/start-script-gen). Just remember there is **no one-size-fits-all** solution-monitor your server and adjust.
 
 #### Where to Change Settings
 
@@ -260,14 +267,14 @@ You’ll see the papermc directory, and you can upload plugins, worlds, or other
 
 
 
-## Summary of `config.yaml` Contents
+## Summary of `config.yaml` Contents 📄
 
 This **Butane configuration** creates multiple files and systemd units on Flatcar, each serving a unique role in managing your Minecraft server. Below is a high-level overview of each key piece, with **small snippets** from the config for clarity.
 
 
 ### 4.1 `papermc.env` (Base Environment File)
 
-Holds the **universal** environment variables—like the Minecraft EULA acceptance, Paper version, default memory (`MC_RAM`), and RCON settings. This file is **always** loaded by the main `minecraft.service`.
+Holds the **universal** environment variables-like the Minecraft EULA acceptance, Paper version, default memory (`MC_RAM`), and RCON settings. This file is **always** loaded by the main `minecraft.service`.
 
 ```yaml
 variant: flatcar
@@ -412,12 +419,11 @@ At the end of the config, Butane **enables**:
 - `sshd-sftp.service` (the optional SFTP process).
 
 When Flatcar boots, these services **start automatically**, letting you jump right in and connect to your Minecraft server.
-<!-- ########################################## -->
 
 
-## Example: Running Flatcar Locally with QEMU
+## Example: Running Flatcar Locally with QEMU 🕹️
 
-If you prefer a **local** setup on your own machine (for testing, development, or just tinkering around), you can run Flatcar Container Linux in a **QEMU** virtual machine. Below is an example workflow. For more details, refer to the [official Flatcar Docs on QEMU](https://www.flatcar.org/docs/latest/provisioning/booting-with-qemu/)—they have more thorough instructions, including different networking and drive configurations.
+If you prefer a **local** setup on your own machine (for testing, development, or just tinkering around), you can run Flatcar Container Linux in a **QEMU** virtual machine. Below is an example workflow. For more details, refer to the [official Flatcar Docs on QEMU](https://www.flatcar.org/docs/latest/provisioning/booting-with-qemu/)-they have more thorough instructions, including different networking and drive configurations.
 
 ---
 
@@ -459,7 +465,7 @@ The `flatcar_production_qemu.sh` script (packaged with the image) can streamline
 Here’s what these flags do:
 
 - **`-M 6144`**: Sets the memory to ~6 GB. Adjust if you want more or less.
-- **`-f 25565:25565`**: QEMU port forwarding. Traffic on the **host’s 25565** is forwarded into the VM’s 25565 (Minecraft).  
+- **`-f 25565:25565`**: QEMU port forwarding. Traffic on the **host’s 25565** is forwarded into the VM’s 25565 (Minecraft).
   - Repeat for other ports like RCON (25575) and SFTP (2223).
 - **`-i ./config.ign`**: Tells the script to feed your Ignition file into the Flatcar VM on first boot.
 - **`-- -display curses`**: Displays QEMU output in your terminal (a “curses” UI). If you prefer a graphical window, remove or change this.
@@ -477,7 +483,7 @@ When QEMU starts, you’ll see **Flatcar** booting. It will apply your Ignition 
 
 Once booted:
 
-1. **Log in** with the `core` user (if you set up SSH keys, you may need to log in via the console or set a password in your Ignition).  
+1. **Log in** with the `core` user (if you set up SSH keys, you may need to log in via the console or set a password in your Ignition).
 2. **Check services** (similar to any Flatcar instance):
    ```bash
    sudo systemctl status minecraft.service
@@ -508,32 +514,32 @@ Once booted:
 
 Since this is a **local** environment:
 
-- You can **stop** QEMU by closing its window or Ctrl-C in the terminal.  
-- If you **reboot** or relaunch the VM, it will persist any Docker volumes you set up on the **VM’s disk image** (assuming you didn’t run the VM in a read-only or tmpfs mode).  
+- You can **stop** QEMU by closing its window or Ctrl-C in the terminal.
+- If you **reboot** or relaunch the VM, it will persist any Docker volumes you set up on the **VM’s disk image** (assuming you didn’t run the VM in a read-only or tmpfs mode).
 - To **change environment variables** (e.g., switch from `small.env` to `large.env`), you can either:
-  1. Re-generate the Ignition file and relaunch the VM, or  
+  1. Re-generate the Ignition file and relaunch the VM, or
   2. Edit the systemd service files within the VM (in `/etc/systemd/system/`) and restart systemd units.
 
 ---
 
 ### Additional Reading & Tips
 
-1. **Official Flatcar Docs**:  
-   - [Running Flatcar with QEMU](https://www.flatcar.org/docs/latest/provisioning/booting-with-qemu/)  
-   - [Ignition / Butane Usage](https://www.flatcar.org/docs/latest/provisioning/ignition/)  
+1. **Official Flatcar Docs**:
+   - [Running Flatcar with QEMU](https://www.flatcar.org/docs/latest/provisioning/booting-with-qemu/)
+   - [Ignition / Butane Usage](https://www.flatcar.org/docs/latest/provisioning/ignition/)
 
-2. **Port Forwarding**:  
+2. **Port Forwarding**:
    If you need more complex networking (e.g., bridging QEMU to your LAN instead of using user-mode forwarding), see the QEMU documentation or the Flatcar docs on advanced networking.
 
-3. **Performance**:  
+3. **Performance**:
    For best results, ensure your host has enough RAM and CPU to handle both your OS and the QEMU guest.
 
-4. **Dev & Testing**:  
+4. **Dev & Testing**:
    Running Flatcar + Minecraft in QEMU is perfect for **trying out** new Docker images or testing your config changes locally before deploying to a cloud environment.
 
 ---
 
-**That’s it!** You’re now hosting your Minecraft server on a local Flatcar VM via QEMU. This approach makes it easy to experiment with different configurations, memory tiers, or plugin setups—all without incurring cloud costs. Have fun building your worlds! 🗺️
+**That’s it!** You’re now hosting your Minecraft server on a local Flatcar VM via QEMU. This approach makes it easy to experiment with different configurations, memory tiers, or plugin setups-all without incurring cloud costs. Have fun building your worlds! 🗺️
 
 
 ## Example: Deploying on Azure Cloud ☁️
@@ -639,7 +645,9 @@ You’ll need to **transpile** the Butane YAML (`config.yaml`) into an **Ignitio
    ```
 2. **Upload `config.ign` to Cloud Shell** if you’re working in Azure’s web interface.
    - Click “Upload” or drag-and-drop it into the Cloud Shell’s file system.
+    ![cloud_shell_upload.png](./imgs/cloud_shell_upload.png)
    - Verify it’s there with `ls`.
+
 
 > **Tip**: If you’re using a local Azure CLI, just keep the generated `config.ign` in the same directory before running the next commands.
 
@@ -669,7 +677,7 @@ az vm create \
 
 
 > ⚠️ **Important SSH Key Warning** ⚠️
-> 
+>
 > Azure Cloud Shell sessions are **ephemeral** - once your session ends or times out, any files (including SSH keys) in the shell environment are **lost**. If you used `--generate-ssh-keys` in Cloud Shell, the **private key** for your VM lives only in that temporary session.
 >
 > **Before you exit Cloud Shell**:
@@ -691,7 +699,7 @@ az vm open-port --resource-group $RESOURCE_GROUP --name $VM_NAME --port 25575 --
 az vm open-port --resource-group $RESOURCE_GROUP --name $VM_NAME --port 2223  --priority 1003   # SFTP
 ```
 
-#### Security Tip 🔐
+#### Security Tip
 Only open the ports you **really need**. If you don’t plan on using RCON or SFTP, you can skip those. Also consider restricting IP ranges or adding further firewall rules for production scenarios.
 
 ---
