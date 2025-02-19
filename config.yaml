@@ -2,6 +2,218 @@ variant: flatcar
 version: 1.0.0
 storage:
   files:
+    ########################################################################
+    # 1) Base environment file (papermc.env)
+    #
+    # This file contains the "universal" environment variables for the
+    # Minecraft Docker container, such as EULA acceptance and RCON info.
+    # None of the advanced Java parameters live here; those are in separate
+    # ".env" files.
+    ########################################################################
+    - path: /etc/systemd/system/papermc.env
+      mode: 0644
+      contents:
+        inline: |
+          # We must accept the EULA for Minecraft.
+          EULA=true
+
+          # Use the "latest" available Paper build.
+          MC_VERSION=latest
+          PAPER_BUILD=latest
+
+          # RCON (Remote Console) is enabled for external administration.
+          ENABLE_RCON=true
+          RCON_PASSWORD=your_rcon_password
+          RCON_PORT=25575
+
+          # This is the total Docker container memory. By default, set
+          # to 4G. You can adjust this if you plan to switch environment
+          # tiers (e.g., 2G, 8G, etc.).
+          MC_RAM=4G
+
+
+    ########################################################################
+    # 2) Minimal tier environment (minimal.env)
+    #
+    # Designed for very small servers (Docker limit of ~2GB). We set the
+    # heap to ~1.5G, leaving ~0.5G overhead for the OS, metaspace, etc.
+    #
+    # Short Explanations:
+    #   -Xms / -Xmx : Minimum and maximum Java heap sizes.
+    #   -XX:+UseG1GC : Use the G1 (Garbage First) garbage collector.
+    #   -XX:G1NewSizePercent / -XX:G1MaxNewSizePercent : Controls the size
+    #     of the "young" generation to handle short-lived objects better.
+    #   -XX:G1ReservePercent : Keeps a portion of heap in reserve to avoid
+    #     'to-space exhaustion' during GCs.
+    #   -XX:SurvivorRatio : Controls ratio of Eden:Survivor spaces.
+    #   -XX:MaxTenuringThreshold : Number of times an object can remain in
+    #     survivor before tenured to the old generation.
+    #   -XX:MaxGCPauseMillis : Target max pause time for GC (in ms).
+    #   -XX:+DisableExplicitGC : Prevents plugins from forcing GC.
+    #   -XX:+AlwaysPreTouch : Pre-allocates all memory pages on startup
+    #     for better performance.
+    #   -Dusing.aikars.flags / -Daikars.new.flags : Helpful markers for
+    #     identifying you’re using Aikar’s recommended GC flags.
+    ########################################################################
+    - path: /etc/systemd/system/minimal.env
+      mode: 0644
+      contents:
+        inline: |
+          # Minimal tier: for Docker limit ~2GB
+          JAVA_OPTS="-Xms1.5G -Xmx1.5G \
+           -XX:+UseG1GC \
+           -XX:+ParallelRefProcEnabled \
+           -XX:+UnlockExperimentalVMOptions \
+           -XX:+DisableExplicitGC \
+           -XX:+AlwaysPreTouch \
+           -XX:G1NewSizePercent=20 \
+           -XX:G1MaxNewSizePercent=40 \
+           -XX:G1ReservePercent=20 \
+           -XX:G1HeapWastePercent=5 \
+           -XX:G1MixedGCCountTarget=4 \
+           -XX:InitiatingHeapOccupancyPercent=15 \
+           -XX:G1MixedGCLiveThresholdPercent=90 \
+           -XX:G1RSetUpdatingPauseTimePercent=5 \
+           -XX:SurvivorRatio=32 \
+           -XX:MaxTenuringThreshold=1 \
+           -XX:MaxGCPauseMillis=150 \
+           -XX:+PerfDisableSharedMem \
+           -Dusing.aikars.flags=https://mcflags.emc.gs \
+           -Daikars.new.flags=true"
+
+
+    ########################################################################
+    # 3) Small tier environment (small.env)
+    #
+    # For a Docker limit of ~4GB. The heap is ~3G, leaving ~1G overhead.
+    # Similar G1-based flags, but includes a G1 Heap Region size of 8M
+    # (recommended by Aikar for moderate heaps).
+    ########################################################################
+    - path: /etc/systemd/system/small.env
+      mode: 0644
+      contents:
+        inline: |
+          # Small tier: for Docker limit ~4GB
+          JAVA_OPTS="-Xms3G -Xmx3G \
+           -XX:+UseG1GC \
+           -XX:+ParallelRefProcEnabled \
+           -XX:+UnlockExperimentalVMOptions \
+           -XX:+DisableExplicitGC \
+           -XX:+AlwaysPreTouch \
+           -XX:G1HeapRegionSize=8M \
+           -XX:G1NewSizePercent=20 \
+           -XX:G1MaxNewSizePercent=40 \
+           -XX:G1ReservePercent=20 \
+           -XX:G1HeapWastePercent=5 \
+           -XX:G1MixedGCCountTarget=4 \
+           -XX:InitiatingHeapOccupancyPercent=15 \
+           -XX:G1MixedGCLiveThresholdPercent=90 \
+           -XX:G1RSetUpdatingPauseTimePercent=5 \
+           -XX:SurvivorRatio=32 \
+           -XX:MaxTenuringThreshold=1 \
+           -XX:MaxGCPauseMillis=150 \
+           -XX:+PerfDisableSharedMem \
+           -Dusing.aikars.flags=https://mcflags.emc.gs \
+           -Daikars.new.flags=true"
+
+
+    ########################################################################
+    # 4) Medium tier environment (medium.env)
+    #
+    # For a Docker limit of ~8GB. The heap is ~6G, leaving ~2G overhead.
+    # This handles mid-sized servers with moderate plugins/player counts.
+    ########################################################################
+    - path: /etc/systemd/system/medium.env
+      mode: 0644
+      contents:
+        inline: |
+          # Medium tier: for Docker limit ~8GB
+          JAVA_OPTS="-Xms6G -Xmx6G \
+           -XX:+UseG1GC \
+           -XX:+ParallelRefProcEnabled \
+           -XX:+UnlockExperimentalVMOptions \
+           -XX:+DisableExplicitGC \
+           -XX:+AlwaysPreTouch \
+           -XX:G1HeapRegionSize=8M \
+           -XX:G1NewSizePercent=20 \
+           -XX:G1MaxNewSizePercent=40 \
+           -XX:G1ReservePercent=20 \
+           -XX:G1HeapWastePercent=5 \
+           -XX:G1MixedGCCountTarget=4 \
+           -XX:InitiatingHeapOccupancyPercent=15 \
+           -XX:G1MixedGCLiveThresholdPercent=90 \
+           -XX:G1RSetUpdatingPauseTimePercent=5 \
+           -XX:SurvivorRatio=32 \
+           -XX:MaxTenuringThreshold=1 \
+           -XX:MaxGCPauseMillis=150 \
+           -XX:+PerfDisableSharedMem \
+           -Dusing.aikars.flags=https://mcflags.emc.gs \
+           -Daikars.new.flags=true"
+
+
+    ########################################################################
+    # 5) Large tier environment (large.env)
+    #
+    # For a Docker limit of ~12–16GB. The heap is ~10G, leaving 2–6GB overhead
+    # for the system. This is suitable for 20-50 players or heavily modded servers.
+    ########################################################################
+    - path: /etc/systemd/system/large.env
+      mode: 0644
+      contents:
+        inline: |
+          # Large tier: for Docker limit ~12-16+ GB
+          JAVA_OPTS="-Xms10G -Xmx10G \
+           -XX:+UseG1GC \
+           -XX:+ParallelRefProcEnabled \
+           -XX:+UnlockExperimentalVMOptions \
+           -XX:+DisableExplicitGC \
+           -XX:+AlwaysPreTouch \
+           -XX:G1HeapRegionSize=8M \
+           -XX:G1NewSizePercent=20 \
+           -XX:G1MaxNewSizePercent=40 \
+           -XX:G1ReservePercent=20 \
+           -XX:G1HeapWastePercent=5 \
+           -XX:G1MixedGCCountTarget=4 \
+           -XX:InitiatingHeapOccupancyPercent=15 \
+           -XX:G1MixedGCLiveThresholdPercent=90 \
+           -XX:G1RSetUpdatingPauseTimePercent=5 \
+           -XX:SurvivorRatio=32 \
+           -XX:MaxTenuringThreshold=1 \
+           -XX:MaxGCPauseMillis=150 \
+           -XX:+PerfDisableSharedMem \
+           -Dusing.aikars.flags=https://mcflags.emc.gs \
+           -Daikars.new.flags=true"
+
+    ########################################################################
+    # 6) Custom environment file (custom.env)
+    #
+    # This file is intentionally left mostly empty, so server admins can
+    # place or tweak their own Java flags without modifying the default tiers.
+    #
+    # Example use case:
+    #   - You want 5G heap, or some advanced GC logging flags, or more exotic
+    #     G1 tunings. Just remove the '#' from the line referencing this file
+    #     in minecraft.service and fill out your custom parameters below.
+    ########################################################################
+    - path: /etc/systemd/system/custom.env
+      mode: 0644
+      contents:
+        inline: |
+          # Custom environment file for advanced or custom Java tuning
+          #
+          # Example usage:
+          # JAVA_OPTS="-Xms5G -Xmx5G \
+          #  -XX:+UseG1GC \
+          #  -XX:+UnlockExperimentalVMOptions \
+          #  -XX:+DisableExplicitGC \
+          #  ... etc. ... "
+          #
+          # By default, this is empty.
+
+    ########################################################################
+    # A separate SSHD-based SFTP service. Allows the administrator to access
+    # Minecraft related files via a tool like Filezilla or WinSCP
+    ########################################################################
     - path: /etc/systemd/system/sshd-sftp.service
       mode: 0644
       contents:
@@ -19,6 +231,17 @@ storage:
           [Install]
           WantedBy=multi-user.target
 
+
+    ########################################################################
+    # The main Minecraft systemd unit.
+    #
+    # Key points:
+    #   - We always load the "base" environment (papermc.env).
+    #   - Uncomment ONE tier environment file for the Java GC flags you want.
+    #   - The "MC_RAM" environment variable in papermc.env should match the
+    #     Docker --memory limit you set. For instance, if you use small.env,
+    #     set docker run --memory="4G".
+    ########################################################################
     - path: /etc/systemd/system/minecraft.service
       mode: 0644
       contents:
@@ -29,34 +252,33 @@ storage:
           Requires=docker.service
 
           [Service]
-          User=core
-          Group=core
-          Restart=always
-          RestartSec=20
-          StandardOutput=journal
-          StandardError=journal
-          Environment="EULA=true"
-          Environment="MC_VERSION=latest"
-          Environment="PAPER_BUILD=latest"
-          Environment="MC_RAM=4G"
-          Environment="JAVA_OPTS=-Xms4G -Xmx4G -XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M"
-          Environment="ENABLE_RCON=true"
-          Environment="RCON_PASSWORD=your_rcon_password"
-          Environment="RCON_PORT=25575"
-          # Ensure the directory exists & set correct permissions
-          ExecStartPre=/bin/mkdir -p /home/core/minecraft
-          ExecStartPre=/bin/chown -R core:core /home/core/minecraft
-          ExecStartPre=/bin/chmod -R 755 /home/core/minecraft
-          ExecStart=/usr/bin/docker run --user 500:500 --name papermc \
-            -p 25565:25565 -p 25575:25575 \
-            --memory="4g" --memory-swap="4g" \
-            -e EULA=true \
-            -e MC_RAM=4G \
-            -e ENABLE_RCON=true \
-            -e RCON_PASSWORD=your_rcon_password \
-            -e RCON_PORT=25575 \
-            -v /home/core/minecraft:/papermc \
+          # Always load the base environment variables (EULA, RCON, etc.)
+          EnvironmentFile=/etc/systemd/system/papermc.env
+
+          # Uncomment exactly ONE tier:
+          #EnvironmentFile=/etc/systemd/system/minimal.env
+          EnvironmentFile=/etc/systemd/system/small.env
+          #EnvironmentFile=/etc/systemd/system/medium.env
+          #EnvironmentFile=/etc/systemd/system/large.env
+
+          # Docker run command: we pass environment variables (EULA, JAVA_OPTS, etc.)
+          ExecStart=/usr/bin/docker run \
+            --name papermc \
+            -p 25565:25565 \
+            -p 25575:25575 \
+            --memory="${MC_RAM}" \
+            --memory-swap="${MC_RAM}" \
+            -e EULA=${EULA} \
+            -e MC_VERSION=${MC_VERSION} \
+            -e PAPER_BUILD=${PAPER_BUILD} \
+            -e MC_RAM=${MC_RAM} \
+            -e JAVA_OPTS="${JAVA_OPTS}" \
+            -e ENABLE_RCON=${ENABLE_RCON} \
+            -e RCON_PASSWORD=${RCON_PASSWORD} \
+            -e RCON_PORT=${RCON_PORT} \
+            -v papermc-data:/papermc \
             ghcr.io/thijmengthn/papermc
+
           ExecStop=/usr/bin/docker stop papermc
           ExecStopPost=/usr/bin/docker rm papermc
 
@@ -65,9 +287,14 @@ storage:
 
 systemd:
   units:
+    # Enable Docker
     - name: docker.service
       enabled: true
+
+    # Enable the main Minecraft service
     - name: minecraft.service
       enabled: true
+
+    # Enable the SSHD SFTP service
     - name: sshd-sftp.service
       enabled: true
