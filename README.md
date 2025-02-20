@@ -27,23 +27,16 @@
     - [Notes on Firewalls \& Security](#notes-on-firewalls--security)
   - [Overview of Steps 📝](#overview-of-steps-)
     - [3.1 Environment Variables \& Java Settings](#31-environment-variables--java-settings)
-      - [Common Env Vars](#common-env-vars)
+      - [Common Env Vars:](#common-env-vars)
     - [3.2 Detailed Java/G1GC Settings](#32-detailed-javag1gc-settings)
-    - [3.3 Memory Settings and Aikar’s Flags](#33-memory-settings-and-aikars-flags)
-      - [Where to Change Settings](#where-to-change-settings)
-    - [3.4 SFTP Service Explanation](#34-sftp-service-explanation)
+    - [3.3 SFTP Service Explanation](#33-sftp-service-explanation)
   - [Summary of `config.yaml` Contents 📄](#summary-of-configyaml-contents-)
-    - [4.1 `papermc.env` (Base Environment File)](#41-papermcenv-base-environment-file)
-    - [4.4 `sshd-sftp.service` (Alternate SFTP on Port 2223)](#44-sshd-sftpservice-alternate-sftp-on-port-2223)
-    - [4.5 `minecraft.service` (Main PaperMC Service)](#45-minecraftservice-main-papermc-service)
-      - [Systemd Units for Docker \& Enabling Services](#systemd-units-for-docker--enabling-services)
   - [Example: Running Flatcar Locally with QEMU 🕹️](#example-running-flatcar-locally-with-qemu-️)
     - [5.1 Download the Flatcar QEMU Image](#51-download-the-flatcar-qemu-image)
     - [5.2 Prepare Your Ignition (Butane) Config](#52-prepare-your-ignition-butane-config)
     - [5.3 Launch QEMU with Port Forwarding](#53-launch-qemu-with-port-forwarding)
     - [5.4 Watch Flatcar Boot \& Docker Start](#54-watch-flatcar-boot--docker-start)
     - [5.5 Interacting with Your Minecraft Server](#55-interacting-with-your-minecraft-server)
-    - [5.6 Tweak \& Persist](#56-tweak--persist)
     - [Additional Reading \& Tips](#additional-reading--tips)
   - [Example: Deploying on Azure Cloud ☁️](#example-deploying-on-azure-cloud-️)
     - [6.1 Connect to Azure \& Understand the Cloud Shell](#61-connect-to-azure--understand-the-cloud-shell)
@@ -88,8 +81,6 @@ Flatcar Container Linux is built with a container-first approach, ensuring that 
 1. **SFTP**: An optional SSH-based SFTP service makes uploading or editing server files (e.g., plugins, world data) straightforward – no extra file-transfer tooling needed beyond your standard SSH key.
 2. **Java Settings**: You directly define the memory allocations by setting the `DOCKER_RAM` for the Docker container and `MC_RAM` for the Java process in the `papermc.env` file. This approach gives you full control over performance parameters.
 
-Both are entirely **optional**. You can skip the SFTP container if you prefer other file management methods, and you can continue using your own Java flags if you don’t need our tiered approach.
-
 
 ---
 
@@ -101,30 +92,28 @@ Both are entirely **optional**. You can skip the SFTP container if you prefer ot
 
 ## Prerequisites & Requirements 🛠️
 
-Although our walkthrough includes **Azure** examples, you can adapt these steps to **any platform** that supports [Flatcar Container Linux](https://www.flatcar.org/)-on-prem, another public cloud, or even a local VM. Here’s what you’ll need:
+Although our walkthrough includes locally hosted as well as **Azure Cloud** hosted examples, you can adapt these steps to **any platform** that supports [Flatcar Container Linux](https://www.flatcar.org/). Here’s what you’ll need:
 
 - **Flatcar-Ready Environment**
-  Any server or virtual machine running a Flatcar image, or the ability to create one (via Azure, AWS, your own hypervisor, etc.).
+  Any server or virtual machine running a Flatcar image, or the ability to create one (via Azure, AWS, your own hypervisor, etc.). If you are going to host it locally, please reffer to the [Flatcar tutorial](https://www.flatcar.org/docs/latest/tutorial/) that details what you will need as well as how to use.
 
 - **SSH Keys**
   Flatcar uses the `core` user with no default password, so you’ll typically log in with SSH keys. Make sure you have a key pair ready.
 
 - **Butane** *(optional but recommended)*
-  If you plan to **locally** generate your Ignition file from the Butane YAML, you’ll need the [Butane CLI](https://coreos.github.io/butane/) or Docker image. If you prefer, you can also write or edit the Ignition config directly.
+  If you plan to **locally** generate your Ignition file from the Butane YAML, you’ll need the [Butane CLI](https://coreos.github.io/butane/) or Docker image ([how to install docker](https://docs.docker.com/engine/install/)). If you prefer, you can also write or edit the Ignition config directly.
 
 - **Basic Container & CLI Knowledge**
-  Because we’re containerizing Minecraft, knowing some Docker basics-like pulling images, viewing logs, or stopping containers-will help troubleshoot any issues.
+  Because we’re containerizing Minecraft, knowing some Docker basics-like pulling images, viewing logs, or stopping containers, will help troubleshoot any issues.
 
 ### Notes on Firewalls & Security
-- This example does **not** automatically configure OS-level firewalls beyond what Azure (or your cloud/provider) might offer. Make sure to open or secure ports if you’re using another environment.
+- This example does **not** automatically configure OS-level firewalls beyond what Azure (or your cloud provider) might offer. Make sure to open or secure ports if you’re using another environment.
 - Always safeguard your SSH keys and RCON passwords.
-
-> **Tip**: If you’re **not** using Azure, just skip any `az` commands in the examples and deploy your Flatcar instance by your platform’s usual means. Then apply the same Butane/Ignition configuration to set up Minecraft services.
 
 
 ## Overview of Steps 📝
 
-Below is a **high-level** outline of how you’ll set up and run your Minecraft server on Flatcar. Each step can be adjusted based on where you’re hosting (Azure, local VM, etc.):
+Below is a **high-level** outline of how you’ll set up and run your Minecraft server using Flatcar. Each step can be adjusted based on where you’re hosting (Azure, local VM, etc.). We will show you two examples of doing that, both locally and later on Azure:
 
 1. **Set or Adjust Environment Variables**
    Decide on your Minecraft version, memory limits, RCON settings, and Java flags (GC tuning). These variables live in the Butane config-or can be edited later on the VM.
@@ -133,7 +122,7 @@ Below is a **high-level** outline of how you’ll set up and run your Minecraft 
    Using [Butane](https://coreos.github.io/butane/), convert the YAML config into an Ignition file (`config.ign`) that Flatcar understands.
 
 3. **Deploy Your Flatcar Instance**
-   Launch a new Flatcar machine-on Azure, AWS, or your local hypervisor-and provide the Ignition file as “custom data” (or “user data”).
+   Launch a new Flatcar machine-on Azure, AWS, or locally, and provide the Ignition file as “custom data” (or “user data”).
 
 4. **Open Ports / Configure Networking**
    Ensure Minecraft (25565), RCON (25575), and SFTP (2223) are accessible if you’re hosting publicly. On Azure, this means adding inbound security rules. On a local environment, you might modify your firewall or router.
@@ -143,15 +132,18 @@ Below is a **high-level** outline of how you’ll set up and run your Minecraft 
 
 ### 3.1 Environment Variables & Java Settings
 
-Running a Minecraft server on Flatcar requires a few key **environment variables** that tell the server (and Docker) how to behave. In this setup, you directly control the memory and Java tuning settings through the variables in `papermc.env`.
+Running a Minecraft server on Flatcar requires a few key **environment variables** that tell the server (and Docker) how to behave. In this setup, you directly control the memory and Java tuning settings through the variables in `papermc.env` that is defined first in `config.yaml` and later after deployment will be in `/etc/systemd/system/papermc.env`.
 
-#### Common Env Vars
+#### Common Env Vars:
 
 - **EULA=true**
   Confirms you accept the Minecraft End User License Agreement. Without `true`, the server won’t start.
 
 - **MC_VERSION / PAPER_BUILD**
   Controls which Paper build is used (e.g., `latest` for the newest version, or a specific tag like `1.20.1`).
+
+- **DOCKER_RAM**
+  Sets how much memory the docker container can use. This should be set slightly lower than the total memory of your host system to allow system overhead.
 
 - **MC_RAM**
   Sets how much memory the Java process can use. This should be set slightly lower than the total container memory (`DOCKER_RAM`) to allow system overhead.
@@ -162,20 +154,34 @@ Running a Minecraft server on Flatcar requires a few key **environment variables
 - **ENABLE_RCON / RCON_PASSWORD / RCON_PORT**
   Enables the Minecraft server’s remote console. Set a strong password and open the port if you need external admin tools.
 
-You can change these variables in **two main ways**:
+An example of how you could structure memory usage across your host, container and minecrafts Java process would be:
+ - The host has `8G` of RAM
+ - `7G` could be given to the docker container
+ - `6G` could be given to the java process running inside the container
+ 
+Thus making `DOCKER_RAM=7G` and `MC_RAM=6G`. This would certainly allow for some system overhead, however remember that every setup, hardware, cloud provider and configuration might be a bit different in terms of perfomance. So make sure you test out your memory configuration and playround/tweak it a bit so that it works on your setup.
+
+For fine-tuning Java performance, you can modify `JAVA_OPTS` with recommended flags or your own settings.
+For an exact set of recommended flags (or if you have special requirements), visit PaperMC’s own [Start Script Generator](https://docs.papermc.io/misc/tools/start-script-gen). Just remember there is **no one-size-fits-all** solution-monitor your server and adjust.
+
+> More on [monitoring/profiling](https://docs.papermc.io/paper/profiling) and [toubleshooting](https://docs.papermc.io/paper/basic-troubleshooting).
+
+
+You can apply the change of these variables in **two main ways**:
 
 1. **Before Provisioning**
    Edit the Butane config that sets up your server. This is ideal if you haven’t deployed yet, since the values will be “baked in” from the start.
 
 2. **After Provisioning**
-   If your server is already running, you can edit the file /etc/systemd/system/minecraft.service on the VM itself. After modifying it, run:
+   If your server is already running, you can edit the `/etc/systemd/system/minecraft.service` or `/etc/systemd/system/papermc.env` file on the VM itself. And after modifying it, run:
 
 ```bash
    sudo systemctl daemon-reload
    sudo systemctl restart minecraft.service
 ```
 
-   This reloads the updated environment settings and restarts the server with them.
+This reloads the updated environment settings and restarts the server with them.
+
 
 ### 3.2 Detailed Java/G1GC Settings
 
@@ -212,36 +218,8 @@ Here’s a quick explanation of some commonly mentioned flags:
 
 > Source: [Aikar's Flags: Recommended JVM startup flags](https://docs.papermc.io/paper/aikars-flags)
 
-### 3.3 Memory Settings and Aikar’s Flags
 
-Choosing the appropriate memory allocations is a balancing act. You directly set the memory limits:
-
-- **DOCKER_RAM**: Total memory allocated to the Docker container. For a typical setup, a value like `4G` is common.
-- **MC_RAM**: Memory allocated for the Java process running the Minecraft server. This should usually be slightly less than `DOCKER_RAM` (for example, `3G` for a `4G` container).
-
-Adjust these values based on the number of players, plugins, and overall server load. For fine-tuning Java performance, you can modify `JAVA_OPTS` with recommended flags or your own settings.
-For an exact set of recommended flags (or if you have special requirements), visit PaperMC’s own [Start Script Generator](https://docs.papermc.io/misc/tools/start-script-gen). Just remember there is **no one-size-fits-all** solution-monitor your server and adjust.
-
-> More on [monitoring/profiling](https://docs.papermc.io/paper/profiling) and [toubleshooting](https://docs.papermc.io/paper/basic-troubleshooting).
-
-#### Where to Change Settings
-
-1. **Before Provisioning**
-   Edit the Butane config that sets up your server. This is ideal if you haven’t deployed yet, since the values will be “baked in” from the start.
-
-2. **After Provisioning**
-   If your server is already running, you can edit the file /etc/systemd/system/minecraft.service on the VM itself. After modifying it, run:
-
-```bash
-   sudo systemctl daemon-reload
-   sudo systemctl restart minecraft.service
-```
-
-   This reloads the updated environment settings and restarts the server with them.
-
-
-
-### 3.4 SFTP Service Explanation
+### 3.3 SFTP Service Explanation
 
 > This is **optional**. If you already have a preferred file-transfer method, skip it!
 
@@ -280,93 +258,13 @@ This configuration file sets up the Flatcar Minecraft Server by creating three e
 3. **/etc/systemd/system/minecraft.service**
    - Configures the Docker run command that launches the PaperMC server container. This service loads the environment variables from papermc.env, binds ports 25565 (Minecraft) and 25575 (RCON), and mounts the papermc-data volume for persistent storage.
 
-Additionally, the systemd section in config.yaml ensures that the following units are enabled at boot:
-- docker.service
-- minecraft.service
-- sshd-sftp.service
-
-This structure ensures that all configuration resides in papermc.env, allowing you to directly control the server's performance parameters.
-
----
-
-### 4.1 `papermc.env` (Base Environment File)
-
-Holds the **universal** environment variables—including the Minecraft EULA acceptance, PaperMC version settings, memory limits, and RCON configuration. This file is **always** loaded by the `minecraft.service`.
-
-```yaml
-# ...existing code...
-- path: /etc/systemd/system/papermc.env
-  mode: 0644
-  contents:
-    inline: |
-      # We must accept the EULA for Minecraft.
-      EULA=true
-      # ...
-```
-
-These variables are **referenced by** `minecraft.service` and apply universally.
-
----
-
-### 4.4 `sshd-sftp.service` (Alternate SFTP on Port 2223)
-
-A **separate** systemd unit running `sshd` on port **2223** rather than the default port 22, enabling SFTP access to server files using the `core` user’s SSH key.
-
-```yaml
-# ...existing code...
-- path: /etc/systemd/system/sshd-sftp.service
-  mode: 0644
-  contents:
-    inline: |
-      [Unit]
-      Description=Separate SFTP Server on Port 2223
-      # ...
-```
-
----
-
-### 4.5 `minecraft.service` (Main PaperMC Service)
-
-Defines how Docker runs the **PaperMC server** container. It loads the environment variables from `papermc.env` and applies them in the Docker run command. Key points include:
-
-- Binding ports **25565** (Minecraft) and **25575** (RCON).
-- Passing environment variables (e.g. EULA, JAVA_OPTS, etc.) to the container.
-- Mounting a volume (`papermc-data`) for persistent data storage (world, configs, etc.).
-
-```yaml
-# ...existing code...
-- path: /etc/systemd/system/minecraft.service
-  mode: 0644
-  contents:
-    inline: |
-      [Unit]
-      Description=PaperMC Minecraft Server
-      After=docker.service
-      Requires=docker.service
-
-      [Service]
-      EnvironmentFile=/etc/systemd/system/papermc.env
-
-      # Docker run command: starts the PaperMC server container.
-      ExecStart=/usr/bin/docker run \
-        --name papermc \
-        -p 25565:25565 \
-# ...existing code...
-```
-
-This structure ensures that all configuration resides in papermc.env, allowing you to directly control the server's performance parameters.
-
----
-
-#### Systemd Units for Docker & Enabling Services
-
-At the end of the config, Butane **enables**:
-
+Additionally, the systemd section in `config.yaml` ensures that the following units are enabled at boot:
 - `docker.service` (ensures Docker starts at boot).
 - `minecraft.service` (the main server).
 - `sshd-sftp.service` (the optional SFTP process).
 
-When Flatcar boots, these services **start automatically**, letting you jump right in and connect to your Minecraft server.
+When Flatcar boots, these services **start automatically**, letting you jump right in and connect to your Minecraft server. This structure ensures that all configuration resides in papermc.env, allowing you to directly control the server's performance parameters.
+
 
 
 ## Example: Running Flatcar Locally with QEMU 🕹️
@@ -388,11 +286,24 @@ Visit the [Flatcar Download Page](https://www.flatcar.org/releases/) or the [Fla
 
 Just like with Azure (or any other environment), you’ll need an **Ignition** file (`config.ign`) that sets up Docker, systemd units, etc. If you have a **Butane YAML** (e.g., `config.yaml`), convert it to `config.ign`:
 
+Bash:
 ```bash
 docker run --rm -i quay.io/coreos/butane:latest < config.yaml > config.ign
 ```
 
-> **Tip**: If you’re not sure how to create this file, see the previous sections or the [Flatcar Docs](https://www.flatcar.org/docs/latest/provisioning/ignition/) on Ignition. The same **Minecraft + SFTP** example config can be used locally just as well as in the cloud.
+Command Prompt on Windows:
+
+```cmd
+docker run --rm -i quay.io/coreos/butane:latest < config.yaml > config.ign
+```
+
+PowerShell on Windows:
+
+```pwsh
+Get-Content -Raw .\config.yaml | docker run --rm -i quay.io/coreos/butane:latest > .\config.ign
+```
+
+> **Tip**: If you’re not sure how to create this file, see the previous sections or the [Flatcar Docs](https://www.flatcar.org/docs/latest/provisioning/ignition/) on Ignition. The same **Minecraft** example config can be used locally just as well as in the cloud.
 
 ---
 
@@ -403,18 +314,17 @@ Before launching QEMU, ensure you have downloaded the latest Flatcar QEMU image 
 Follow these steps if you’re new to Flatcar:
 
 1. Download the Flatcar QEMU image (typically named `flatcar_production_qemu_image.img`) and the helper script (`flatcar_production_qemu.sh`) using your browser or command-line tools like `wget`.
+    ```bash
+    wget https://stable.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_image.img
+    ```
 
 2. Make the helper script executable:
    ```bash
    chmod +x flatcar_production_qemu.sh
    ```
 
-3. Create a backup of the image to always have a pristine copy available (helpful because Ignition runs only on first boot):
-   ```bash
-   cp -i --reflink=auto flatcar_production_qemu_image.img.fresh flatcar_production_qemu_image.img
-   ```
 
-4. Launch QEMU with port forwarding to access your services:
+3. Launch QEMU with port forwarding to access your services:
    ```bash
    ./flatcar_production_qemu.sh \
      -M 6144 \            # Allocate 6144 MB RAM to the VM
@@ -467,18 +377,6 @@ Once booted:
   sftp -P 2223 core@127.0.0.1
   ```
   and use your SSH key or local console-based authentication (if configured). You’ll see the `/home/core/papermc` directory for uploading mods/plugins.
-
----
-
-### 5.6 Tweak & Persist
-
-Since this is a **local** environment:
-
-- You can **stop** QEMU by closing its window or Ctrl-C in the terminal.
-- If you **reboot** or relaunch the VM, it will persist any Docker volumes you set up on the **VM’s disk image** (assuming you didn’t run the VM in a read-only or tmpfs mode).
-- To **change environment variables** (e.g., switch from `small.env` to `large.env`), you can either:
-  1. Re-generate the Ignition file and relaunch the VM, or
-  2. Edit the systemd service files within the VM (in `/etc/systemd/system/`) and restart systemd units.
 
 ---
 
