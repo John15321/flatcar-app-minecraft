@@ -22,20 +22,18 @@
   - [Introduction \& Purpose 🌟](#introduction--purpose-)
     - [Why Flatcar?](#why-flatcar)
     - [Why Containers for Minecraft?](#why-containers-for-minecraft)
-    - [Optional SFTP \& Java Tiers](#optional-sftp--java-tiers)
+    - [Optional SFTP \& Java Settings](#optional-sftp--java-settings)
   - [Prerequisites \& Requirements 🛠️](#prerequisites--requirements-️)
     - [Notes on Firewalls \& Security](#notes-on-firewalls--security)
   - [Overview of Steps 📝](#overview-of-steps-)
-    - [3.1 Environment Variables \& Java Tiers](#31-environment-variables--java-tiers)
+    - [3.1 Environment Variables \& Java Settings](#31-environment-variables--java-settings)
       - [Common Env Vars](#common-env-vars)
     - [3.2 Detailed Java/G1GC Settings](#32-detailed-javag1gc-settings)
-    - [3.3 Memory Tiers and Aikar’s Flags](#33-memory-tiers-and-aikars-flags)
+    - [3.3 Memory Settings and Aikar’s Flags](#33-memory-settings-and-aikars-flags)
       - [Where to Change Settings](#where-to-change-settings)
     - [3.4 SFTP Service Explanation](#34-sftp-service-explanation)
   - [Summary of `config.yaml` Contents 📄](#summary-of-configyaml-contents-)
     - [4.1 `papermc.env` (Base Environment File)](#41-papermcenv-base-environment-file)
-    - [4.2 Tiered Environment Files (`minimal.env`, `small.env`, `medium.env`, `large.env`)](#42-tiered-environment-files-minimalenv-smallenv-mediumenv-largeenv)
-    - [4.3  `custom.env`](#43--customenv)
     - [4.4 `sshd-sftp.service` (Alternate SFTP on Port 2223)](#44-sshd-sftpservice-alternate-sftp-on-port-2223)
     - [4.5 `minecraft.service` (Main PaperMC Service)](#45-minecraftservice-main-papermc-service)
       - [Systemd Units for Docker \& Enabling Services](#systemd-units-for-docker--enabling-services)
@@ -67,7 +65,11 @@
 
 ## Introduction & Purpose 🌟
 
-Welcome to the **Flatcar Minecraft Server** project! This repository shows how to run a [PaperMC](https://papermc.io/) server on **Flatcar Container Linux** in a **containerized** fashion. Although our examples focus on **Azure** (for convenience and clarity), you can use the same principles on **any** platform that supports Flatcar-be it your own data center, another public cloud, or even local VMs.
+Welcome to the **Flatcar Minecraft Server** project! This repository demonstrates how to run a [PaperMC](https://papermc.io/) server on [Flatcar Container Linux](https://www.flatcar.org/), a lightweight, immutable OS designed specifically for containerized applications.
+
+If you're new to Flatcar, we highly recommend exploring the [Flatcar Homepage](https://www.flatcar.org/) for detailed information on features, installation guides, and best practices. The [Flatcar Documentation](https://www.flatcar.org/docs/latest/) is also an excellent resource to help you get started with deploying and managing Flatcar instances.
+
+Flatcar Container Linux is built with a container-first approach, ensuring that you have an environment optimized for running Docker (or containerd) workloads securely. Whether you're running Minecraft for fun or setting up a production game server, this guide provides you with all the necessary steps to get your server up and running smoothly.
 
 ### Why Flatcar?
 
@@ -81,10 +83,10 @@ Welcome to the **Flatcar Minecraft Server** project! This repository shows how t
 - **Separation of Concerns**: You don’t have to worry about installing Java or other system dependencies directly on the host.
 - **Scalability**: Spin up additional containers on other Flatcar instances if you need more capacity or want a test environment.
 
-### Optional SFTP & Java Tiers
+### Optional SFTP & Java Settings
 
-1. **SFTP**: An optional SSH-based SFTP service makes uploading or editing server files (e.g., plugins, world data) straightforward-no extra file-transfer tooling needed beyond your standard SSH key.
-2. **Java Configuration Tiers**: We provide multiple environment configs (Minimal, Small, Medium, Large, or a fully Custom) to match different server sizes. If you have just a few players, pick a smaller tier. If you’re running a bustling community, crank up the RAM and use the large tier.
+1. **SFTP**: An optional SSH-based SFTP service makes uploading or editing server files (e.g., plugins, world data) straightforward – no extra file-transfer tooling needed beyond your standard SSH key.
+2. **Java Settings**: You directly define the memory allocations by setting the `DOCKER_RAM` for the Docker container and `MC_RAM` for the Java process in the `papermc.env` file. This approach gives you full control over performance parameters.
 
 Both are entirely **optional**. You can skip the SFTP container if you prefer other file management methods, and you can continue using your own Java flags if you don’t need our tiered approach.
 
@@ -139,9 +141,9 @@ Below is a **high-level** outline of how you’ll set up and run your Minecraft 
 5. **Verify & Manage Services**
    SSH into the box (`ssh core@...`) to check `minecraft.service` and (optionally) `sshd-sftp.service`. Tail logs, tweak environment variables, and restart if needed.
 
-### 3.1 Environment Variables & Java Tiers
+### 3.1 Environment Variables & Java Settings
 
-Running a Minecraft server on Flatcar requires a few key **environment variables** that tell the server (and Docker) how to behave. Understanding these variables helps you **customize** performance, game version, and server features.
+Running a Minecraft server on Flatcar requires a few key **environment variables** that tell the server (and Docker) how to behave. In this setup, you directly control the memory and Java tuning settings through the variables in `papermc.env`.
 
 #### Common Env Vars
 
@@ -152,10 +154,10 @@ Running a Minecraft server on Flatcar requires a few key **environment variables
   Controls which Paper build is used (e.g., `latest` for the newest version, or a specific tag like `1.20.1`).
 
 - **MC_RAM**
-  Sets how much memory the container can use (e.g., `4G`). Usually, you’ll match this with Docker’s `--memory="4g"` so it doesn’t get OOM-killed.
+  Sets how much memory the Java process can use. This should be set slightly lower than the total container memory (`DOCKER_RAM`) to allow system overhead.
 
 - **JAVA_OPTS**
-  The big one: Java flags controlling heap size (`-Xmx`), GC tuning (`-XX:+UseG1GC`), and more. If your server lags or runs out of memory, you often adjust these.
+  Java flags that control heap size, garbage collection tuning, and other performance-related parameters.
 
 - **ENABLE_RCON / RCON_PASSWORD / RCON_PORT**
   Enables the Minecraft server’s remote console. Set a strong password and open the port if you need external admin tools.
@@ -208,35 +210,34 @@ Here’s a quick explanation of some commonly mentioned flags:
 - **-Dusing.aikars.flags / -Daikars.new.flags**
   Just markers indicating these are “Aikar’s recommended” settings.
 
+> Source: [Aikar's Flags: Recommended JVM startup flags](https://docs.papermc.io/paper/aikars-flags)
 
-### 3.3 Memory Tiers and Aikar’s Flags
+### 3.3 Memory Settings and Aikar’s Flags
 
-Choosing how much memory to give your server is often a balancing act. Too little, and the server runs out of RAM; too much, and you might waste resources or see diminishing returns. Here are **rough guidelines**:
+Choosing the appropriate memory allocations is a balancing act. You directly set the memory limits:
 
-- **Minimal (~2 GB Docker Limit)**: ~1.5 GB Java heap
-- **Small (~4 GB Docker Limit)**: ~3 GB Java heap
-- **Medium (~8 GB Docker Limit)**: ~6 GB Java heap
-- **Large (~12–16 GB Docker Limit)**: ~10+ GB Java heap
+- **DOCKER_RAM**: Total memory allocated to the Docker container. For a typical setup, a value like `4G` is common.
+- **MC_RAM**: Memory allocated for the Java process running the Minecraft server. This should usually be slightly less than `DOCKER_RAM` (for example, `3G` for a `4G` container).
 
-If you’re unsure, it’s best to start around **4 GB** (Small) and see how your server performs. Check usage with docker stats or in the game logs. If you have 10–20 players or a lot of plugins, you might need **8 GB** or more.
-
+Adjust these values based on the number of players, plugins, and overall server load. For fine-tuning Java performance, you can modify `JAVA_OPTS` with recommended flags or your own settings.
 For an exact set of recommended flags (or if you have special requirements), visit PaperMC’s own [Start Script Generator](https://docs.papermc.io/misc/tools/start-script-gen). Just remember there is **no one-size-fits-all** solution-monitor your server and adjust.
+
+> More on [monitoring/profiling](https://docs.papermc.io/paper/profiling) and [toubleshooting](https://docs.papermc.io/paper/basic-troubleshooting).
 
 #### Where to Change Settings
 
-1. **In your Butane YAML**
-   Change Environment="JAVA_OPTS=..." or Environment="MC_RAM=..." in your config before converting it into Ignition and deploying.
+1. **Before Provisioning**
+   Edit the Butane config that sets up your server. This is ideal if you haven’t deployed yet, since the values will be “baked in” from the start.
 
-2. **On the Host (Post-Deployment)**
-   - Open /etc/systemd/system/minecraft.service.
-   - Edit the environment lines (e.g., Environment="JAVA_OPTS=...").
-   - Run the commands:
+2. **After Provisioning**
+   If your server is already running, you can edit the file /etc/systemd/system/minecraft.service on the VM itself. After modifying it, run:
 
-bash
-     sudo systemctl daemon-reload
-     sudo systemctl restart minecraft.service
+```bash
+   sudo systemctl daemon-reload
+   sudo systemctl restart minecraft.service
+```
 
-   - The new settings take effect immediately after restart.
+   This reloads the updated environment settings and restarts the server with them.
 
 
 
@@ -268,121 +269,72 @@ You’ll see the papermc directory, and you can upload plugins, worlds, or other
 
 
 ## Summary of `config.yaml` Contents 📄
+This configuration file sets up the Flatcar Minecraft Server by creating three essential files and enabling the necessary systemd units:
 
-This **Butane configuration** creates multiple files and systemd units on Flatcar, each serving a unique role in managing your Minecraft server. Below is a high-level overview of each key piece, with **small snippets** from the config for clarity.
+1. **/etc/systemd/system/papermc.env**
+   - Contains core environment variables such as acceptance of the Minecraft EULA, PaperMC build parameters (MC_VERSION and PAPER_BUILD), memory settings (DOCKER_RAM and MC_RAM), and JVM tuning options via JAVA_OPTS.
 
+2. **/etc/systemd/system/sshd-sftp.service**
+   - Defines an SSH-based SFTP service running on port 2223, allowing secure file management (plugins, world data, etc.) via SFTP using your SSH key.
+
+3. **/etc/systemd/system/minecraft.service**
+   - Configures the Docker run command that launches the PaperMC server container. This service loads the environment variables from papermc.env, binds ports 25565 (Minecraft) and 25575 (RCON), and mounts the papermc-data volume for persistent storage.
+
+Additionally, the systemd section in config.yaml ensures that the following units are enabled at boot:
+- docker.service
+- minecraft.service
+- sshd-sftp.service
+
+This structure ensures that all configuration resides in papermc.env, allowing you to directly control the server's performance parameters.
+
+---
 
 ### 4.1 `papermc.env` (Base Environment File)
 
-Holds the **universal** environment variables-like the Minecraft EULA acceptance, Paper version, default memory (`MC_RAM`), and RCON settings. This file is **always** loaded by the main `minecraft.service`.
+Holds the **universal** environment variables—including the Minecraft EULA acceptance, PaperMC version settings, memory limits, and RCON configuration. This file is **always** loaded by the `minecraft.service`.
 
 ```yaml
-variant: flatcar
-version: 1.0.0
-storage:
-  files:
-    ########################################################################
-    # 1) Base environment file (papermc.env)
-    # ...
-    ########################################################################
-    - path: /etc/systemd/system/papermc.env
-      mode: 0644
-      contents:
-        inline: |
-          # We must accept the EULA for Minecraft.
-          EULA=true
-          # ...
-```
-
-These variables are **referenced by** `minecraft.service` and **apply universally**, regardless of which Java tier you select.
-<!-- TODO: This whole section needs to be reworked now -->
----
-<!-- 
-### 4.2 Tiered Environment Files (`minimal.env`, `small.env`, `medium.env`, `large.env`)
-
-These **four environment files** each define different memory allocations and G1GC parameters tailored for various server sizes. You can pick **one** to load in `minecraft.service` (or skip them all in favor of `custom.env`).
-
-For example, here’s the **small.env** snippet (heavily truncated for illustration):
-
-```yaml
-######################################################################
-# 3) Small tier environment (small.env)
-# ...
-######################################################################
-- path: /etc/systemd/system/small.env
+# ...existing code...
+- path: /etc/systemd/system/papermc.env
   mode: 0644
   contents:
     inline: |
-      JAVA_OPTS="-Xms3G -Xmx3G \
-       -XX:+UseG1GC \
-       -XX:+ParallelRefProcEnabled \
-       # ...
+      # We must accept the EULA for Minecraft.
+      EULA=true
+      # ...
 ```
 
-- **Minimal:** ~1.5 GB heap (for ~2 GB Docker limit)
-- **Small:** ~3 GB heap (for ~4 GB Docker limit)
-- **Medium:** ~6 GB heap (for ~8 GB Docker limit)
-- **Large:** ~10 GB heap (for ~12–16 GB Docker limit)
-
-⚠️ **Pick** the one that fits your server’s resource limit by uncommenting its line in `minecraft.service`! ⚠️
-
----
-
-### 4.3  `custom.env`
-
-An **empty template** for those who want to define their **own** Java options without altering the provided configurations. If you want, say, 5 GB of heap and custom GC logging flags, just fill in `JAVA_OPTS` here and **uncomment** its reference in `minecraft.service`, while commenting out the other ones.
-
-```yaml
-######################################################################
-# 6) Custom environment file (custom.env)
-# ...
-######################################################################
-- path: /etc/systemd/system/custom.env
-  mode: 0644
-  contents:
-    inline: |
-      # Custom environment file for advanced or custom Java tuning
-      #
-      # Example usage:
-      # JAVA_OPTS="-Xms5G -Xmx5G ..."
-      #
-      # By default, this is empty.
-``` -->
+These variables are **referenced by** `minecraft.service` and apply universally.
 
 ---
 
 ### 4.4 `sshd-sftp.service` (Alternate SFTP on Port 2223)
 
-A **separate** systemd unit running `sshd` on port **2223** rather than the default 22, allowing you to **SFTP** into the server (with the `core` user’s SSH key). This is optional but makes file management simpler:
+A **separate** systemd unit running `sshd` on port **2223** rather than the default port 22, enabling SFTP access to server files using the `core` user’s SSH key.
 
 ```yaml
-######################################################################
-# A separate SSHD-based SFTP service.
-# ...
-######################################################################
+# ...existing code...
 - path: /etc/systemd/system/sshd-sftp.service
   mode: 0644
   contents:
     inline: |
       [Unit]
       Description=Separate SFTP Server on Port 2223
-      ...
+      # ...
 ```
 
 ---
 
 ### 4.5 `minecraft.service` (Main PaperMC Service)
 
-Defines how Docker should run the **PaperMC server** container. It **loads** the base `papermc.env` plus **one** of the tiered `.env` files (or `custom.env` if you prefer). Key points:
+Defines how Docker runs the **PaperMC server** container. It loads the environment variables from `papermc.env` and applies them in the Docker run command. Key points include:
 
-- Binds ports **25565** (Minecraft) and **25575** (RCON).
-- Passes environment variables (`EULA`, `JAVA_OPTS`, etc.) into the Docker run command.
-- Mounts a volume (`papermc-data`) for persistent data (world, configs, etc.).
+- Binding ports **25565** (Minecraft) and **25575** (RCON).
+- Passing environment variables (e.g. EULA, JAVA_OPTS, etc.) to the container.
+- Mounting a volume (`papermc-data`) for persistent data storage (world, configs, etc.).
 
 ```yaml
-######################################################################
-# The main Minecraft systemd unit.
-######################################################################
+# ...existing code...
 - path: /etc/systemd/system/minecraft.service
   mode: 0644
   contents:
@@ -395,18 +347,14 @@ Defines how Docker should run the **PaperMC server** container. It **loads** the
       [Service]
       EnvironmentFile=/etc/systemd/system/papermc.env
 
-      # Uncomment exactly ONE tier:
-      #EnvironmentFile=/etc/systemd/system/minimal.env
-      EnvironmentFile=/etc/systemd/system/small.env
-      #EnvironmentFile=/etc/systemd/system/medium.env
-      #EnvironmentFile=/etc/systemd/system/large.env
-      # Or use:
-      #EnvironmentFile=/etc/systemd/system/custom.env
-
-      ...
+      # Docker run command: starts the PaperMC server container.
+      ExecStart=/usr/bin/docker run \
+        --name papermc \
+        -p 25565:25565 \
+# ...existing code...
 ```
 
-This structure ensures you can **pick your tier** (Minimal, Small, Medium, Large, or Custom) without altering your main service definition.
+This structure ensures that all configuration resides in papermc.env, allowing you to directly control the server's performance parameters.
 
 ---
 
@@ -450,27 +398,39 @@ docker run --rm -i quay.io/coreos/butane:latest < config.yaml > config.ign
 
 ### 5.3 Launch QEMU with Port Forwarding
 
-The `flatcar_production_qemu.sh` script (packaged with the image) can streamline running QEMU. For example:
+Before launching QEMU, ensure you have downloaded the latest Flatcar QEMU image and helper script from the official Flatcar website. You can obtain these files from the [Flatcar Releases](https://www.flatcar.org/releases/) page or review the [Flatcar Documentation](https://www.flatcar.org/docs/latest/) for detailed instructions.
 
-```bash
-./flatcar_production_qemu.sh \
-  -M 6144 \            # Allocate 6144 MB RAM to the VM
-  -f 25565:25565 \     # Forward Minecraft port (25565) to host
-  -f 25575:25575 \     # Forward RCON port (25575) to host
-  -f 2223:2223 \       # Forward SFTP port (2223) to host
-  -i ./config.ign \    # Provide the Ignition config
-  -- -display curses
-```
+Follow these steps if you’re new to Flatcar:
 
-Here’s what these flags do:
+1. Download the Flatcar QEMU image (typically named `flatcar_production_qemu_image.img`) and the helper script (`flatcar_production_qemu.sh`) using your browser or command-line tools like `wget`.
 
-- **`-M 6144`**: Sets the memory to ~6 GB. Adjust if you want more or less.
-- **`-f 25565:25565`**: QEMU port forwarding. Traffic on the **host’s 25565** is forwarded into the VM’s 25565 (Minecraft).
-  - Repeat for other ports like RCON (25575) and SFTP (2223).
-- **`-i ./config.ign`**: Tells the script to feed your Ignition file into the Flatcar VM on first boot.
-- **`-- -display curses`**: Displays QEMU output in your terminal (a “curses” UI). If you prefer a graphical window, remove or change this.
+2. Make the helper script executable:
+   ```bash
+   chmod +x flatcar_production_qemu.sh
+   ```
 
-> **Note**: The `-f` flag might differ depending on your version of the script. Some older versions use `-p` for port forwarding. Check `./flatcar_production_qemu.sh --help` if uncertain.
+3. Create a backup of the image to always have a pristine copy available (helpful because Ignition runs only on first boot):
+   ```bash
+   cp -i --reflink=auto flatcar_production_qemu_image.img.fresh flatcar_production_qemu_image.img
+   ```
+
+4. Launch QEMU with port forwarding to access your services:
+   ```bash
+   ./flatcar_production_qemu.sh \
+     -M 6144 \            # Allocate 6144 MB RAM to the VM
+     -f 25565:25565 \     # Forward Minecraft port (host to guest)
+     -f 25575:25575 \     # Forward RCON port (host to guest)
+     -f 2223:2223 \       # Forward SFTP port (host to guest)
+     -i ./config.ign \    # Provide the Ignition config generated from Butane
+     -- -display curses   # Display QEMU output in terminal mode (adjust as needed)
+   ```
+
+This command ensures:
+- Memory allocation for the Flatcar VM is set per your requirements.
+- Ports 25565, 25575, and 2223 are forwarded from your host to the VM, making the Minecraft server, RCON, and SFTP services accessible.
+- Your Ignition configuration (`config.ign`) is loaded on first boot to set up Docker, systemd, and other services automatically.
+
+If you're completely new to Flatcar, we highly recommend visiting the [Flatcar Quickstart Guide](https://www.flatcar.org/docs/latest/getting-started/) and exploring the [Flatcar Documentation](https://www.flatcar.org/docs/latest/) for more comprehensive instructions and insights into managing Flatcar Container Linux.
 
 ---
 

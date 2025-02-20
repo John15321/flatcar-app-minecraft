@@ -5,8 +5,10 @@ storage:
     ########################################################################
     # Environment file (papermc.env)
     #
-    # This file contains the "universal" environment variables for the
-    # Minecraft Docker container, such as EULA acceptance and RCON info.
+    # This file contains environment variables used by the Minecraft server.
+    # Define the total memory for the Docker container with DOCKER_RAM and
+    # allocate memory for the Java process with MC_RAM.
+    # Note: MC_RAM should be set a bit lower than DOCKER_RAM to allow for system overhead.
     ########################################################################
     - path: /etc/systemd/system/papermc.env
       mode: 0644
@@ -19,22 +21,19 @@ storage:
           MC_VERSION=latest
           PAPER_BUILD=latest
 
-          # RCON (Remote Console) is enabled for external administration.
+          # RCON (Remote Console) configuration for external administration.
           ENABLE_RCON=true
           RCON_PASSWORD=your_rcon_password
           RCON_PORT=25575
 
-          # This is the total Docker container memory. By default, set
-          # to 4G. You can adjust this if you plan to switch environment
-          # e.g., 2G, 8G, etc.
+          # Total Docker container memory. Adjust as needed (e.g., 2G, 4G, 8G etc.).
           DOCKER_RAM=4G
 
-          # This is the memory setting for the Java process that will run the Minecraft server
-          # It would be a bit lower than the total Docker container memory
-          # to allow for the operating system and other processes to run
+          # Memory allocated for the Java process running the Minecraft server.
+          # Set this to a value slightly lower than DOCKER_RAM to provide room for system overhead.
           MC_RAM=3G
 
-          # Java specific options for tuning the JVM
+          # Java options for tuning the JVM (garbage collection, heap settings, etc.).
           JAVA_OPTS="-XX:+UseG1GC \
            -XX:+ParallelRefProcEnabled \
            -XX:+UnlockExperimentalVMOptions \
@@ -83,12 +82,12 @@ storage:
     ########################################################################
     # The main Minecraft systemd unit.
     #
-    # Key points:
-    #   - We always load the "base" environment (papermc.env).
-    #   - Uncomment ONE tier environment file for the Java GC flags you want.
-    #   - The "MC_RAM" environment variable in papermc.env should match the
-    #     Docker --memory limit you set. For instance, if you use small.env,
-    #     set docker run --memory="4G".
+    # This service launches the Docker container for the PaperMC server.
+    # It reads environment variables from /etc/systemd/system/papermc.env.
+    # DOCKER_RAM sets the memory limit for the container, and MC_RAM sets the
+    # available memory for the Java process (which should be slightly lower
+    # than DOCKER_RAM to leave room for additional overhead).
+    # JAVA_OPTS provides Java tuning options.
     ########################################################################
     - path: /etc/systemd/system/minecraft.service
       mode: 0644
@@ -100,10 +99,12 @@ storage:
           Requires=docker.service
 
           [Service]
-          # Always load the base environment variables (EULA, RCON, etc.)
+          # Load environment parameters from /etc/systemd/system/papermc.env
           EnvironmentFile=/etc/systemd/system/papermc.env
 
-          # Docker run command: we pass environment variables (EULA, JAVA_OPTS, etc.)
+          # Docker run command: starts the PaperMC server container.
+          # Ports 25565 (Minecraft) and 25575 (RCON) are published.
+          # Memory flags for the container and Java process are set via DOCKER_RAM and MC_RAM respectively.
           ExecStart=/usr/bin/docker run \
             --name papermc \
             -p 25565:25565 \
