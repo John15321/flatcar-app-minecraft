@@ -27,7 +27,7 @@ storage:
           RCON_PORT=25575
 
           # Total Docker container memory. Adjust as needed (e.g., 2G, 4G, 8G etc.).
-          DOCKER_RAM=4G
+          DOCKER_RAM=74G
 
           # Memory allocated for the Java process running the Minecraft server.
           # Set this to a value slightly lower than DOCKER_RAM to provide room for system overhead.
@@ -105,7 +105,11 @@ storage:
           # Docker run command: starts the PaperMC server container.
           # Ports 25565 (Minecraft) and 25575 (RCON) are published.
           # Memory flags for the container and Java process are set via DOCKER_RAM and MC_RAM respectively.
+          ExecStartPre=/bin/mkdir -p /home/core/papermc
+          ExecStartPre=/bin/chown -R core:core /home/core/papermc
+          ExecStartPre=/bin/chmod -R 755 /home/core/papermc
           ExecStart=/usr/bin/docker run \
+            --user 500:500 \
             --name papermc \
             -p 25565:25565 \
             -p 25575:25575 \
@@ -119,7 +123,7 @@ storage:
             -e ENABLE_RCON=${ENABLE_RCON} \
             -e RCON_PASSWORD=${RCON_PASSWORD} \
             -e RCON_PORT=${RCON_PORT} \
-            -v papermc-data:/papermc \
+            -v /home/core/papermc:/papermc \
             ghcr.io/thijmengthn/papermc
 
           ExecStop=/usr/bin/docker stop papermc

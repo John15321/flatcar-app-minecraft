@@ -12,17 +12,19 @@
 > **A lightweight, containerized PaperMC setup on [Flatcar Container Linux](https://www.flatcar.org/).**
 > **Easily deployable on Azure or any other cloud/provider.**
 
+## TL;DR:
+This project sets up a lightweight, containerized Minecraft server using PaperMC on Flatcar Container Linux. It leverages Docker and systemd to run the server with configurable environment variables (for Java memory, garbage collection, RCON, etc.) and includes an optional SFTP service for easy file transfers. The guide provides step-by-step instructions for both local deployments using QEMU (with port forwarding for Minecraft, RCON, and SFTP) and cloud deployments on Azure (covering resource groups, VNet, SSH keys, and opening necessary ports). This container-first approach simplifies updates, rollbacks, and scalability while ensuring a secure, minimal OS footprint.
 
----
+
 
 ## Table of Contents 📚
 
 - [Flatcar Minecraft Server](#flatcar-minecraft-server)
+  - [TL;DR:](#tldr)
   - [Table of Contents 📚](#table-of-contents-)
   - [Introduction \& Purpose 🌟](#introduction--purpose-)
     - [Why Flatcar?](#why-flatcar)
     - [Why Containers for Minecraft?](#why-containers-for-minecraft)
-    - [Optional SFTP \& Java Settings](#optional-sftp--java-settings)
   - [Prerequisites \& Requirements 🛠️](#prerequisites--requirements-️)
     - [Notes on Firewalls \& Security](#notes-on-firewalls--security)
   - [Overview of Steps 📝](#overview-of-steps-)
@@ -52,7 +54,7 @@
     - [6.9 SSH into Your VM \& Check Services](#69-ssh-into-your-vm--check-services)
     - [6.10 Connecting to RCON](#610-connecting-to-rcon)
     - [6.11 Connecting via SFTP](#611-connecting-via-sftp)
-  - [That’s It!](#thats-it)
+    - [That’s It!](#thats-it)
 
 ---
 
@@ -75,11 +77,6 @@ Flatcar Container Linux is built with a container-first approach, ensuring that 
 - **Easy Upgrades & Rollbacks**: Want to update your server or switch to a different version? Just pull a new container image.
 - **Separation of Concerns**: You don’t have to worry about installing Java or other system dependencies directly on the host.
 - **Scalability**: Spin up additional containers on other Flatcar instances if you need more capacity or want a test environment.
-
-### Optional SFTP & Java Settings
-
-1. **SFTP**: An optional SSH-based SFTP service makes uploading or editing server files (e.g., plugins, world data) straightforward – no extra file-transfer tooling needed beyond your standard SSH key.
-2. **Java Settings**: You directly define the memory allocations by setting the `DOCKER_RAM` for the Docker container and `MC_RAM` for the Java process in the `papermc.env` file. This approach gives you full control over performance parameters.
 
 
 ---
@@ -158,7 +155,7 @@ An example of how you could structure memory usage across your host, container a
  - The host has `8G` of RAM
  - `7G` could be given to the docker container
  - `6G` could be given to the java process running inside the container
- 
+
 Thus making `DOCKER_RAM=7G` and `MC_RAM=6G`. This would certainly allow for some system overhead, however remember that every setup, hardware, cloud provider and configuration might be a bit different in terms of perfomance. So make sure you test out your memory configuration and playround/tweak it a bit so that it works on your setup.
 
 For fine-tuning Java performance, you can modify `JAVA_OPTS` with recommended flags or your own settings.
@@ -280,7 +277,9 @@ Visit the [Flatcar Download Page](https://www.flatcar.org/releases/) or the [Fla
 - Make sure you match the **version** of Flatcar you want (e.g., Stable, Beta, etc.).
 - Place these files in a convenient directory on your local machine.
 
----
+```bash
+wget https://stable.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_image.img
+```
 
 ### 5.2 Prepare Your Ignition (Butane) Config
 
@@ -313,9 +312,10 @@ Before launching QEMU, ensure you have downloaded the latest Flatcar QEMU image 
 
 Follow these steps if you’re new to Flatcar:
 
-1. Download the Flatcar QEMU image (typically named `flatcar_production_qemu_image.img`) and the helper script (`flatcar_production_qemu.sh`) using your browser or command-line tools like `wget`.
+1. Download the helper script (`flatcar_production_qemu.sh`) from the git repo using your browser or command-line tools like `wget`.
+
     ```bash
-    wget https://stable.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu_image.img
+    wget https://stable.release.flatcar-linux.net/amd64-usr/current/flatcar_production_qemu.sh
     ```
 
 2. Make the helper script executable:
@@ -377,6 +377,33 @@ Once booted:
   sftp -P 2223 core@127.0.0.1
   ```
   and use your SSH key or local console-based authentication (if configured). You’ll see the `/home/core/papermc` directory for uploading mods/plugins.
+
+
+You can also use a GUI based program like [Filezilla](https://filezilla-project.org/). First create a new connection:
+
+![SFTP](./imgs/new_connection.png)
+
+Then fill out the necceserry fields:
+  1. In our case because we are running it locally, the `IP` is going to be localhost or simply `127.0.0.1`.
+  2. The port for `SFTP` (default is `2223` unless you have changed it)
+  3. Select the `Key file` option as Flatcar is passworldless
+  4. Select the `core` user
+  5. Select the key you downloaded or have locally that can be used to log into the `core` user on your VM
+
+Now you should be able to press `Connect` and connect to the server:
+
+![SFTP local connect](./imgs/sftp_connect_local.png)
+
+You should see a folder named `papermc`:
+
+![SFTP home](./imgs/sftp_home.png)
+
+This is where all of the game files exist and you can edit/download/ them upload new ones etc.:
+
+![SFTP papermc](./imgs/sftp_papermc.png)
+
+
+
 
 ---
 
@@ -543,7 +570,10 @@ az vm create \
 > 2. **Download or copy** it to a secure location (e.g., your local machine, a key vault, or password manager).
 > 3. **Test** you can SSH to your VM with that saved key.
 >
+>   ![Download file](./imgs/az_upload.png)
+>
 > If you lose the key, Flatcar won’t let you log in (no password option by default), and you’ll likely have to rebuild or forcibly reset the VM’s SSH settings. Thus, **save your key** and keep it safe.
+
 
 ---
 
@@ -599,17 +629,40 @@ Type `/help` or any Minecraft command (e.g., `/list`) to interact with the serve
 If you uncommented or included the `sshd-sftp.service` in your config, you have an **SFTP** server listening on port **2223**:
 
 ```bash
-sftp -P 2223 core@<your-vm-ip>
+sftp -P 2223 core@<your-vm-ip> # Make sure to point SSH to the right key file
 ```
 
 - **SSH keys** are used for authentication (no password).
 - Upload plugins, world folders, or config files to the `/home/core/papermc` directory inside the container’s volume.
 
+You can also use a GUI based program like [Filezilla](https://filezilla-project.org/). First create a new connection:
+
+![SFTP](./imgs/new_connection.png)
+
+Then fill out the necceserry fields:
+  1. The public `IP` of the server.
+  2. The port for `SFTP` (default is `2223` unless you have changed it)
+  3. Select the `Key file` option as Flatcar is passworldless
+  4. Select the `core` user
+  5. Select the key you downloaded or have locally that can be used to log into the `core` user on your VM
+
+Now you should be able to press `Connect` and connect to the server:
+
+![SFTP](./imgs/sftp_connect.png)
+
+You should see a folder named `papermc`:
+
+![SFTP home](./imgs/sftp_home.png)
+
+This is where all of the game files exist and you can edit/download/ them upload new ones etc.:
+
+![SFTP papermc](./imgs/sftp_papermc.png)
+
 > **Note**: If you changed your SFTP setup or user, adapt this command accordingly.
 
 ---
 
-## That’s It!
+### That’s It!
 
 You’ve successfully launched a **Docker-based PaperMC server** on a Flatcar VM in Azure. From here, you can:
 
