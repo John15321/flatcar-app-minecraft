@@ -2,27 +2,93 @@ variant: flatcar
 version: 1.0.0
 storage:
   files:
-    - path: /etc/systemd/system/sftp-mc.service
+    ########################################################################
+    # Environment file (papermc.env)
+    #
+    # This file contains environment variables used by the Minecraft server.
+    # Define the total memory for the Docker container with DOCKER_RAM and
+    # allocate memory for the Java process with MC_RAM.
+    # Note: MC_RAM should be set a bit lower than DOCKER_RAM to allow for system overhead.
+    ########################################################################
+    - path: /etc/systemd/system/papermc.env
+      mode: 0644
+      contents:
+        inline: |
+          # We must accept the EULA for Minecraft.
+          EULA=true
+
+          # Use the "latest" available Paper build.
+          MC_VERSION=latest
+          PAPER_BUILD=latest
+
+          # RCON (Remote Console) configuration for external administration.
+          ENABLE_RCON=true
+          RCON_PASSWORD=your_rcon_password
+          RCON_PORT=25575
+
+          # Total Docker container memory. Adjust as needed (e.g., 2G, 4G, 8G etc.).
+          DOCKER_RAM=74G
+
+          # Memory allocated for the Java process running the Minecraft server.
+          # Set this to a value slightly lower than DOCKER_RAM to provide room for system overhead.
+          MC_RAM=3G
+
+          # Java options for tuning the JVM (garbage collection, heap settings, etc.).
+          JAVA_OPTS="-XX:+UseG1GC \
+           -XX:+ParallelRefProcEnabled \
+           -XX:+UnlockExperimentalVMOptions \
+           -XX:+DisableExplicitGC \
+           -XX:+AlwaysPreTouch \
+           -XX:G1HeapRegionSize=8M \
+           -XX:G1NewSizePercent=20 \
+           -XX:G1MaxNewSizePercent=40 \
+           -XX:G1ReservePercent=20 \
+           -XX:G1HeapWastePercent=5 \
+           -XX:G1MixedGCCountTarget=4 \
+           -XX:InitiatingHeapOccupancyPercent=15 \
+           -XX:G1MixedGCLiveThresholdPercent=90 \
+           -XX:G1RSetUpdatingPauseTimePercent=5 \
+           -XX:SurvivorRatio=32 \
+           -XX:MaxTenuringThreshold=1 \
+           -XX:MaxGCPauseMillis=150 \
+           -XX:+PerfDisableSharedMem \
+           -Dusing.aikars.flags=https://mcflags.emc.gs \
+           -Daikars.new.flags=true"
+
+
+
+    ########################################################################
+    # A separate SSHD-based SFTP service. Allows the administrator to access
+    # Minecraft related files via a tool like Filezilla or WinSCP
+    ########################################################################
+    - path: /etc/systemd/system/sshd-sftp.service
       mode: 0644
       contents:
         inline: |
           [Unit]
-          Description=SFTP Server for PaperMC Data
-          After=docker.service
-          Requires=docker.service
+          Description=Separate SFTP Server on Port 2223
+          After=network-online.target sshd.service
+          Wants=network-online.target
 
           [Service]
-          Restart=on-failure
-          RestartSec=30
-          StandardOutput=journal
-          StandardError=journal
-          ExecStart=/usr/bin/docker run --name sftp -p 2223:22 -v papermc-data:/home/minecraftuser/papermc ghcr.io/atmoz/sftp/debian minecraftuser:password:::papermc
-          ExecStop=/usr/bin/docker stop sftp
-          ExecStopPost=/usr/bin/docker rm sftp
+          ExecStart=/usr/sbin/sshd -D -f /etc/ssh/sshd_config -p 2223
+          Restart=always
+          RestartSec=10
 
           [Install]
           WantedBy=multi-user.target
 
+
+    ########################################################################
+    # The main Minecraft systemd unit.
+    #
+    # This service launches the Docker container for the PaperMC server.
+    # It reads environment variables from /etc/systemd/system/papermc.env.
+    # DOCKER_RAM sets the memory limit for the container, and MC_RAM sets the
+    # available memory for the Java process (which should be slightly lower
+    # than DOCKER_RAM to leave room for additional overhead).
+    # JAVA_OPTS provides Java tuning options.
+    ########################################################################
     - path: /etc/systemd/system/minecraft.service
       mode: 0644
       contents:
@@ -33,19 +99,33 @@ storage:
           Requires=docker.service
 
           [Service]
-          Restart=always
-          RestartSec=20
-          StandardOutput=journal
-          StandardError=journal
-          Environment="EULA=true"
-          Environment="MC_VERSION=latest"
-          Environment="PAPER_BUILD=latest"
-          Environment="MC_RAM=4G"
-          Environment="JAVA_OPTS=-Xms4G -Xmx4G -XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M"
-          Environment="ENABLE_RCON=true"
-          Environment="RCON_PASSWORD=your_rcon_password"
-          Environment="RCON_PORT=25575"
-          ExecStart=/usr/bin/docker run --name papermc -p 25565:25565 -p 25575:25575 --memory="4g" --memory-swap="4g"  -e EULA=true -e MC_VERSION=latest -e PAPER_BUILD=latest -e MC_RAM=4G -e JAVA_OPTS="-Xms4G -Xmx4G -XX:+UseG1GC -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M" -e ENABLE_RCON=true -e RCON_PASSWORD=your_rcon_password -e RCON_PORT=25575 -v papermc-data:/papermc phyremaster/papermc
+          # Load environment parameters from /etc/systemd/system/papermc.env
+          EnvironmentFile=/etc/systemd/system/papermc.env
+
+          # Docker run command: starts the PaperMC server container.
+          # Ports 25565 (Minecraft) and 25575 (RCON) are published.
+          # Memory flags for the container and Java process are set via DOCKER_RAM and MC_RAM respectively.
+          ExecStartPre=/bin/mkdir -p /home/core/papermc
+          ExecStartPre=/bin/chown -R core:core /home/core/papermc
+          ExecStartPre=/bin/chmod -R 755 /home/core/papermc
+          ExecStart=/usr/bin/docker run \
+            --user 500:500 \
+            --name papermc \
+            -p 25565:25565 \
+            -p 25575:25575 \
+            --memory="${DOCKER_RAM}" \
+            --memory-swap="${DOCKER_RAM}" \
+            -e EULA=${EULA} \
+            -e MC_VERSION=${MC_VERSION} \
+            -e PAPER_BUILD=${PAPER_BUILD} \
+            -e MC_RAM=${MC_RAM} \
+            -e JAVA_OPTS="${JAVA_OPTS}" \
+            -e ENABLE_RCON=${ENABLE_RCON} \
+            -e RCON_PASSWORD=${RCON_PASSWORD} \
+            -e RCON_PORT=${RCON_PORT} \
+            -v /home/core/papermc:/papermc \
+            ghcr.io/thijmengthn/papermc
+
           ExecStop=/usr/bin/docker stop papermc
           ExecStopPost=/usr/bin/docker rm papermc
 
@@ -54,9 +134,14 @@ storage:
 
 systemd:
   units:
+    # Enable Docker
     - name: docker.service
       enabled: true
-    - name: sftp-mc.service
-      enabled: true
+
+    # Enable the main Minecraft service
     - name: minecraft.service
+      enabled: true
+
+    # Enable the SSHD SFTP service
+    - name: sshd-sftp.service
       enabled: true
